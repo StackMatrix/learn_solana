@@ -1,0 +1,5 @@
+queue:
+  rabbitmq:
+    uri: 'amqp://guest:guest@localhost:5672/'
+    exchange_name: 'example'
+    delay_exchange_name: 'example-delay'

@@ -1,0 +1,28 @@
+persistence:
+  db_level: 'warn'
+  driver: 'mysql'
+  mysql:
+    host: '127.0.0.1'
+    port: 3306
+    database: 'solana'
+    username: 'root'
+    password: '123qweasdzxc'
+    charset: 'utf8mb4'
+    max_idle_conns: 10
+    max_open_conns: 100
+    log_mode: 'debug'
+    enable_file_log_writer: true
+    log_filename: 'sql.log'
+  postgres:
+    host: '127.0.0.1'
+    port: 5432
+    database: 'postgres'
+    username: 'postgres'
+    password: '123456'
+    ssl_mode: "disable"
+    charset: 'utf8mb4'
+    max_idle_conns: 10
+    max_open_conns: 100
+    log_mode: 'service'
+    enable_file_log_writer: true
+    log_filename: 'sql.log'

@@ -1,0 +1,59 @@
+{"timestamp":"2024-08-12 16:41:18.252","level":"INFO","fields":{"message":"Applying all pending migrations"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 16:41:18.255","level":"INFO","fields":{"message":"No pending migrations"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 16:41:51.435","level":"INFO","fields":{"message":"Applying all pending migrations"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 16:41:51.438","level":"INFO","fields":{"message":"No pending migrations"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 16:42:03.972","level":"INFO","fields":{"message":"Applying all pending migrations"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 16:42:03.974","level":"INFO","fields":{"message":"No pending migrations"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 17:08:10.330","level":"INFO","fields":{"message":"Applying all pending migrations"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 17:08:10.332","level":"INFO","fields":{"message":"No pending migrations"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 17:08:27.474","level":"INFO","fields":{"message":"Rolling back all applied migrations"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 17:08:27.477","level":"INFO","fields":{"message":"Rolling back migration 'm20220101_000001_create_table'"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 17:08:27.477","level":"WARN","fields":{"message":"+ [Migration] drop table starting"},"target":"learn_solana::application::domain::model::migration::m20220101_000001_create_table"}
+{"timestamp":"2024-08-12 17:08:27.563","level":"WARN","fields":{"message":"+ [Migration] drop table complete"},"target":"learn_solana::application::domain::model::migration::m20220101_000001_create_table"}
+{"timestamp":"2024-08-12 17:08:27.563","level":"INFO","fields":{"message":"Migration 'm20220101_000001_create_table' has been rollbacked"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 17:08:27.568","level":"INFO","fields":{"message":"Applying all pending migrations"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 17:08:27.572","level":"INFO","fields":{"message":"Applying migration 'm20220101_000001_create_table'"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 17:08:27.594","level":"INFO","fields":{"message":"Migration 'm20220101_000001_create_table' has been applied"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 17:10:14.155","level":"INFO","fields":{"message":"Rolling back all applied migrations"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 17:10:14.157","level":"INFO","fields":{"message":"Rolling back migration 'm20220101_000001_create_table'"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 17:10:14.157","level":"WARN","fields":{"message":"+ [Migration] drop Post table starting"},"target":"learn_solana::application::domain::model::migration::m20220101_000001_create_table"}
+{"timestamp":"2024-08-12 17:10:14.221","level":"WARN","fields":{"message":"+ [Migration] drop Post table complete"},"target":"learn_solana::application::domain::model::migration::m20220101_000001_create_table"}
+{"timestamp":"2024-08-12 17:10:14.221","level":"INFO","fields":{"message":"Migration 'm20220101_000001_create_table' has been rollbacked"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 17:10:14.222","level":"INFO","fields":{"message":"Applying all pending migrations"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 17:10:14.223","level":"INFO","fields":{"message":"Applying migration 'm20220101_000001_create_table'"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 17:10:14.243","level":"INFO","fields":{"message":"Migration 'm20220101_000001_create_table' has been applied"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 18:02:56.362","level":"INFO","fields":{"message":"Rolling back all applied migrations"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 18:02:56.364","level":"INFO","fields":{"message":"Rolling back migration 'm20220101_000001_create_table'"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 18:02:56.364","level":"WARN","fields":{"message":"+ [Migration] drop Post table starting"},"target":"learn_solana::application::domain::model::migration::m20220101_000001_create_table"}
+{"timestamp":"2024-08-12 18:02:56.399","level":"WARN","fields":{"message":"+ [Migration] drop Post table complete"},"target":"learn_solana::application::domain::model::migration::m20220101_000001_create_table"}
+{"timestamp":"2024-08-12 18:02:56.399","level":"INFO","fields":{"message":"Migration 'm20220101_000001_create_table' has been rollbacked"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 18:02:56.401","level":"INFO","fields":{"message":"Applying all pending migrations"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 18:02:56.402","level":"INFO","fields":{"message":"Applying migration 'm20220101_000001_create_table'"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 18:02:56.425","level":"INFO","fields":{"message":"Migration 'm20220101_000001_create_table' has been applied"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 18:26:26.771","level":"INFO","fields":{"message":"Rolling back all applied migrations"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 18:26:26.774","level":"INFO","fields":{"message":"Rolling back migration 'm20220101_000001_create_table'"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 18:26:26.774","level":"WARN","fields":{"message":"+ [Migration] drop Post table starting"},"target":"learn_solana::core::domain::model::migration::m20220101_000001_create_table"}
+{"timestamp":"2024-08-12 18:26:26.852","level":"WARN","fields":{"message":"+ [Migration] drop Post table complete"},"target":"learn_solana::core::domain::model::migration::m20220101_000001_create_table"}
+{"timestamp":"2024-08-12 18:26:26.852","level":"INFO","fields":{"message":"Migration 'm20220101_000001_create_table' has been rollbacked"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 18:26:26.853","level":"INFO","fields":{"message":"Applying all pending migrations"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 18:26:26.856","level":"INFO","fields":{"message":"Applying migration 'm20220101_000001_create_table'"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 18:26:26.876","level":"INFO","fields":{"message":"Migration 'm20220101_000001_create_table' has been applied"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 18:28:41.896","level":"INFO","fields":{"message":"Rolling back all applied migrations"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 18:28:41.898","level":"INFO","fields":{"message":"Rolling back migration 'm20220101_000001_create_table'"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 18:28:41.898","level":"WARN","fields":{"message":"+ [Migration] drop Post table starting"},"target":"learn_solana::core::domain::model::migration::m20220101_000001_create_table"}
+{"timestamp":"2024-08-12 18:28:41.981","level":"WARN","fields":{"message":"+ [Migration] drop Post table complete"},"target":"learn_solana::core::domain::model::migration::m20220101_000001_create_table"}
+{"timestamp":"2024-08-12 18:28:41.981","level":"INFO","fields":{"message":"Migration 'm20220101_000001_create_table' has been rollbacked"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 18:28:41.983","level":"INFO","fields":{"message":"Applying all pending migrations"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 18:28:41.987","level":"INFO","fields":{"message":"Applying migration 'm20220101_000001_create_table'"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-12 18:28:42.013","level":"INFO","fields":{"message":"Migration 'm20220101_000001_create_table' has been applied"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-13 01:24:38.933","level":"INFO","fields":{"message":"Rolling back all applied migrations"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-13 01:24:38.939","level":"INFO","fields":{"message":"Rolling back migration 'm20220101_000001_create_table'"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-13 01:24:38.939","level":"WARN","fields":{"message":"+ [Migration] drop Post table starting"},"target":"learn_solana::core::infrastructure::presentation::model::migration::m20220101_000001_create_table"}
+{"timestamp":"2024-08-13 01:25:35.354","level":"INFO","fields":{"message":"Rolling back all applied migrations"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-13 01:25:35.356","level":"INFO","fields":{"message":"Rolling back migration 'm20220101_000001_create_table'"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-13 01:25:35.356","level":"WARN","fields":{"message":"+ [Migration] drop Post table starting"},"target":"learn_solana::core::infrastructure::presentation::model::migration::m20220101_000001_create_table"}
+{"timestamp":"2024-08-13 01:25:35.413","level":"WARN","fields":{"message":"+ [Migration] drop Post table complete"},"target":"learn_solana::core::infrastructure::presentation::model::migration::m20220101_000001_create_table"}
+{"timestamp":"2024-08-13 01:25:35.413","level":"INFO","fields":{"message":"Migration 'm20220101_000001_create_table' has been rollbacked"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-13 01:25:35.421","level":"INFO","fields":{"message":"Applying all pending migrations"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-13 01:25:35.424","level":"INFO","fields":{"message":"Applying migration 'm20220101_000001_create_table'"},"target":"sea_orm_migration::migrator"}
+{"timestamp":"2024-08-13 01:25:35.448","level":"INFO","fields":{"message":"Migration 'm20220101_000001_create_table' has been applied"},"target":"sea_orm_migration::migrator"}

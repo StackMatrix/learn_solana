@@ -1,0 +1,8 @@
+log:
+  level: 'debug'
+  root_dir: 'storage/logs'
+  filename: 'log'
+  max_backups: 3
+  max_size: 500
+  max_age: 28
+  compress: true

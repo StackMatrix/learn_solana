@@ -1,0 +1,20 @@
+storage:
+  default: 'local'
+  disks:
+    local:
+      root_dir: 'storage/control'
+      app_url: 'http://localhost:8888/storage'
+    ali_oss:
+      access_key_id: 'access_key_id'
+      access_key_secret: 'access_key_secret'
+      bucket: 'bucket'
+      endpoint: 'endpoint'
+      is_ssl: true
+      is_private: false
+    qi_niu:
+      access_key: 'access_key'
+      secret_key: 'secret_key'
+      bucket: 'bucket'
+      domain: 'domain'
+      is_ssl: true
+      is_private: false

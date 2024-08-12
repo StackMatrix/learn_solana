@@ -1,0 +1,42 @@
+[package]
+name = "learn_solana"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# == 基础框架 ==
+axum = "0.7.5" # web 框架
+tokio = { version = "1.39.2", features = ["full"]} # 异步框架
+
+# == 基础信息 ==
+config = "0.14.0" # 配置文件解析
+serde_json = "1.0.122" # json 序列化
+serde = { version = "1.0.205", features = ["derive"] } # json 序列化
+
+# == 数据库 ==
+sea-orm = { version = "1.0.0-rc.7", features = [ "sqlx-mysql", "runtime-tokio-rustls", "macros", "debug-print"] } # orm 框架
+sea-schema = "0.16.0-rc.1"
+sea-orm-migration = "1.0.0-rc.7" # orm 迁移
+
+# == 日志 ==
+tower-http = { version = "0.5.2", features = ["trace"] } # http 日志记录
+color-eyre = "0.6.3" # 日志错误颜色
+tklog = "0.0.9" # tklog 日志
+tracing = "0.1.40" # tracing 日志
+tracing-error = "0.2.0" # tracing 日志错误
+tracing-appender = "0.2.1" # tracing 日志文件
+tracing-subscriber = {version = "0.3.18", features = ["env-filter", "time", "local-time", "json"] } # tracing 收集日志
+
+# == solana ==
+#solana-program = "2.0.5" # solana 程序
+#solana-client = "2.0.5" # solana 客户端
+
+# == 其他 ==
+ssh2 = "0.9.1" # ssh 连接管理
+sysinfo = {  version = "0.28.3", default-features = false, features = ["default"] }
+log = "0.4.22"
+time = "0.3.36"
+http = "1.1.0" # 系统信息的库
+
+
+

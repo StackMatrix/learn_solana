@@ -1,0 +1,6 @@
+app:
+  env: 'debug'
+  port: 8000
+  app_name: 'sonlana_control'
+  ip_addr: '127.0.0.1'
+  version: '0.0.1'

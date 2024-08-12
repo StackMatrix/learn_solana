@@ -1,0 +1,7 @@
+smtp:
+  net_ease_163:
+    host: "smtp.163.com"
+    port: 25
+    name: "学习项目"
+    user: "artisancode@163.com"
+    password: "PWTW111111"
