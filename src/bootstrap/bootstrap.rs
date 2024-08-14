@@ -19,10 +19,10 @@ pub struct Bootstrap {
 impl Bootstrap {
     /// # Description
     ///     初始化依赖
-    /// # Param
+    /// # Parama
     ///     None
     /// # Return
-    ///     Result<(), Box<dyn Error + Send + Sync>>
+    ///     Result<(), Box<dyn Error>>
     ///         - (): None
     ///         - Box<dyn Error + Send + Sync>: 错误
     pub async fn run() -> Result<Self, Box<dyn Error>> {

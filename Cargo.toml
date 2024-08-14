@@ -34,8 +34,9 @@ tracing-subscriber = {version = "0.3.18", features = ["env-filter", "time", "loc
 # == 其他 ==
 ssh2 = "0.9.1" # ssh 连接管理
 sysinfo = {  version = "0.28.3", default-features = false, features = ["default"] }
-log = "0.4.22"
-time = "0.3.36"
+log = "0.4.22" # 日志记录
+time = "0.3.36" # 时间库
+bcrypt = "0.15.1" # 加密库
 http = "1.1.0" # 系统信息的库
 
 
