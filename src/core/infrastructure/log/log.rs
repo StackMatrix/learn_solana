@@ -1,10 +1,11 @@
-use std::{error::Error, rc::Rc};
-use color_eyre::eyre::{eyre, Result};
+use std::sync::Arc;
+use color_eyre::eyre::Result;
+use color_eyre::Report;
 use time::{UtcOffset, macros::format_description};
 use tklog::{LEVEL, Format, LOG};
-use tracing::{error, info, instrument, Level};
+use tracing::Level;
 use tracing_appender::{rolling::{RollingFileAppender, Rotation}, non_blocking::WorkerGuard};
-use tracing_subscriber::{fmt::{format, format::FmtSpan, time::OffsetTime}, layer::SubscriberExt, util::SubscriberInitExt, fmt, Layer, EnvFilter, Registry};
+use tracing_subscriber::{fmt::{format::FmtSpan, time::OffsetTime}, layer::SubscriberExt, fmt, Layer, EnvFilter, Registry};
 use crate::core::infrastructure::config::Config;
 
 /// # Description
@@ -21,25 +22,25 @@ impl Log {
     /// # Description
     ///     初始化日志
     /// # Param
-    ///     settings Arc<Mutex<Settings>>: settings 配置
+    ///     settings Arc<Config>: config 配置
     /// # Return
-    ///     Result<Log, Box<dyn Error>>
+    ///     Result<Log, Report>
     ///         - Log: 日志实例化
-    ///         - Box<dyn Error>: 错误
-    pub async fn new(config: Rc<Config>) -> Result<Self, Box<dyn Error>> {
-        let (log_guard, sql_guard) = Self::tracing_log(Rc::clone(&config)).await?;
+    ///         - Report: 错误报告
+    pub async fn new(config: Arc<Config>) -> Result<Self, Report> {
+        let (log_guard, sql_guard) = Self::tracing_log(Arc::clone(&config)).await?;
         Ok(Self{ log_guard, sql_guard })
     }
 
     /// # Description
     ///     tracing 日志方法
     /// # Param
-    ///     settings Arc<Mutex<Settings>>: settings 配置
+    ///     settings Arc<Config>: config 配置
     /// # Return
-    ///     Result<WorkerGuard, Box<dyn Error>>
-    ///         - WorkerGuard: 日志守护
-    ///         - Box<dyn Error>: 错误
-    async fn tracing_log(config: Rc<Config>) -> Result<(WorkerGuard, WorkerGuard), Box<dyn Error>> {
+    ///     Result<(WorkerGuard, WorkerGuard), Report>
+    ///         - (WorkerGuard, WorkerGuard): 日志守护
+    ///         - Report: 错误报告
+    async fn tracing_log(config: Arc<Config>) -> Result<(WorkerGuard, WorkerGuard), Report> {
         // 读取数据
         let log_config = &config.log;
 
@@ -124,8 +125,6 @@ impl Log {
             ));
         tracing::subscriber::set_global_default(subscriber)?;
 
-        info!("+ [Config] Parse and load config success");
-
         // 安裝 color-eyre 的 panic 处理句柄
         color_eyre::install()?;
 
@@ -136,12 +135,12 @@ impl Log {
     /// # Description
     ///     tklog 日志方法
     /// # Param
-    ///     settings Arc<Mutex<Settings>>: settings 配置
+    ///     settings Arc<Mutex<Config>>: config 配置
     /// # Return
-    ///     Result<(), Box<dyn Error>>
+    ///     Result<(), Report>
     ///         - (): None
-    ///         - Box<dyn Error>: 错误
-    async fn tklog_log(config: Rc<Config>) -> Result<(), Box<dyn Error>> {
+    ///         - Report: 错误报告
+    async fn tklog_log(config: Arc<Config>) -> Result<(), Report> {
         // 读取数据
         let log_config = &config.log;
 

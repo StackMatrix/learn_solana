@@ -1,51 +1,37 @@
 use std::error::Error;
-use std::rc::Rc;
+use std::sync::Arc;
 use color_eyre::eyre::Result;
-use sea_orm_migration::MigratorTrait;
-use crate::core::infrastructure::config::Config;
-use crate::core::infrastructure::{log::Log, presentation::Persistence, webserver::WebServer};
-use crate::core::infrastructure::presentation::model::migration::MigratorHandle;
+use color_eyre::Report;
+use tracing::info;
+use crate::core::{
+    domain::DomainLayer,
+    infrastructure::InfrastructureLayer,
+};
 
 /// # Description
-///     【app】引导组件实例化
-/// # Param
-///     log Log: 日志实例
-///     persistence Persistence: 持久化实例
+///     【app】引导 DDD 每依层次运行
 pub struct Bootstrap {
-    log: Log,
-    persistence: Persistence,
+    pub infrastructure_layer: Arc<InfrastructureLayer>,
+    pub domain_layer: Arc<DomainLayer>,
 }
 
 impl Bootstrap {
     /// # Description
     ///     初始化依赖
-    /// # Parama
+    /// # Param
     ///     None
     /// # Return
-    ///     Result<(), Box<dyn Error>>
-    ///         - (): None
-    ///         - Box<dyn Error + Send + Sync>: 错误
-    pub async fn run() -> Result<Self, Box<dyn Error>> {
-        // 加载配置
-        let config = Config::new().map_err(|e| format!("- [Config] Init err: {:?}", e))?;
+    ///     Result<Self, Report>
+    ///         - Bootstrap: 引导实例化
+    ///         - Report: 错误报告
+    pub async fn run() -> Result<Self, Report> {
+        // 引导基础设施层的启动
+        let infrastructure_layer = Arc::new(InfrastructureLayer::new().await?);
+        info!("+Bootstrap [InfrastructureLayer] Load complete.");
 
-        // 配置引用
-        let config_arc = Rc::new(config);
+        let domain_layer = Arc::new(DomainLayer::new(infrastructure_layer.clone()).await);
+        info!("+Bootstrap [DomainLayer] Load complete.");
 
-        // 初始化日志
-        let log = Log::new(Rc::clone(&config_arc)).await?;
-
-        // 连接到数据库
-        let persistence = Persistence::new(Rc::clone(&config_arc)).await?;
-
-        // 迁移数据库
-        let persistence_rc = Rc::new(&persistence);
-        MigratorHandle::down(&persistence_rc.db, None).await?;
-        MigratorHandle::up(&persistence_rc.db, None).await?;
-
-        // 启动 Web 服务
-        WebServer::new(Rc::clone(&config_arc)).await?;
-
-        Ok(Self { log, persistence })
+        Ok(Self{ infrastructure_layer, domain_layer })
     }
 }

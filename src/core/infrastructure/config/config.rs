@@ -1,5 +1,6 @@
 use serde::Deserialize;
 use color_eyre::eyre::Result;
+use color_eyre::Report;
 use config::{Config as Conf, ConfigError, File};
 
 #[derive(Debug, Deserialize)]
@@ -167,8 +168,13 @@ pub struct SmtpDetails {
 }
 
 impl Config {
-    /// 解析程序配置文件
-    pub fn new() -> Result<Self, ConfigError> {
+    /// # Description
+    ///     解析程序配置文件
+    /// # Return
+    ///     Result<Self, Report>
+    ///         - Config: 程序配置
+    ///         - Report: 错误报告
+    pub async fn new() -> Result<Config, Report> {
         let builder = Conf::builder()
             .set_default("default", "1")?
             .add_source(File::with_name("conf/app.yaml"))

@@ -1,11 +1,11 @@
-use std::error::Error;
+
 use std::net::{IpAddr, SocketAddr};
-use std::rc::Rc;
-use axum::handler::Handler;
-use tracing::{info, Level, Span};
-use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, OnResponse, TraceLayer};
-use color_eyre::eyre::Result;
+use std::sync::Arc;
+use tracing::{info, Level};
+use tower_http::trace::{DefaultMakeSpan, TraceLayer};
+use color_eyre::eyre::{Result, Report};
 use color_eyre::owo_colors::OwoColorize;
+use tokio::sync::Notify;
 use crate::core::infrastructure::log::{CustomOnRequest, CustomOnResponse};
 use crate::core::interfaces::router::Router;
 use crate::core::infrastructure::config::Config;
@@ -13,37 +13,46 @@ use crate::core::infrastructure::config::Config;
 
 /// # Description
 ///     【WebServer】WebServer 服务
-pub struct WebServer;
+/// # Param
+///     notify_shutdown: 关闭提醒
+pub struct WebServer {
+    notify_shutdown: Arc<Notify>,
+}
 
 impl WebServer {
     /// # Description
     ///     新建 WebServer 服务
     /// # Param
-    ///     settings: 配置
+    ///     config Arc<Config>: config 配置
     /// # Return
-    ///     Result<Persistence, Box<dyn Error>>
-    ///         - (): None
-    ///         - Box<dyn Error>: 错误
-    pub async fn new(config: Rc<Config>) -> Result<(), Box<dyn Error>> {
-        Self::axum_run(config).await?;
-        Ok(())
+    ///     Result<Persistence, Report>
+    ///         - WebServer: Web 服务
+    ///         - Report: 错误报告
+    pub async fn new(config: Arc<Config>) -> Result<Self, Report> {
+        let notify_shutdown = Arc::new(Notify::new());
+        let server_notify_shutdown = Arc::clone(&notify_shutdown);
+
+        tokio::spawn(Self::axum_run(config, server_notify_shutdown));
+
+        Ok(Self{ notify_shutdown })
     }
 
 
     /// # Description
     ///     WebServer 连接
     /// # Param
-    ///     None
+    ///     config Arc<Config>: config 配置
+    ///     notify_shutdown Arc<Notify>: Web 服务关闭
     /// # Return
-    ///     Result<(), Box<dyn Error + Send + Sync>>
+    ///     Result<(), Report>
     ///         - (): None
-    ///         - Box<dyn Error + Send + Sync>: 错误
-    async fn axum_run(config: Rc<Config>) -> Result<(), Box<dyn Error>> {
+    ///         - Report: 错误报告
+    async fn axum_run(config: Arc<Config>, notify_shutdown: Arc<Notify>) -> Result<(), Report> {
         // 读取数据
         let app_config = &config.app;
 
         // 转换 IP 地址
-        let ip_addr: IpAddr = app_config.ip_addr.parse().map_err(|e| format!("- [WebServer] Invalid IP address: {}", e))?;
+        let ip_addr = app_config.ip_addr.parse()?;
 
         let addr = SocketAddr::new(ip_addr, app_config.port);
 
@@ -64,8 +73,16 @@ impl WebServer {
         info!("+ [WebServer] WebServer listener at http://{:?}", addr);
 
         // 启动 web 服务
-        axum::serve(listener, router_log).await?;
+        axum::serve(listener, router_log)
+            .with_graceful_shutdown(async move { notify_shutdown.notified().await })
+            .await?;
 
         Ok(())
+    }
+
+    /// # Description
+    ///     WebServer 关闭
+    pub fn axum_shutdown(&self) {
+        self.notify_shutdown.notify_one();
     }
 }

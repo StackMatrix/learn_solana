@@ -1,8 +1,8 @@
 use std::fmt::Debug;
 use std::time::Duration;
-use http::{Request, Response};
+use axum::http::Response;
 use tower_http::trace::OnResponse;
-use tracing::{event, info, Level, Span};
+use tracing::{info, Level, Span};
 
 #[derive(Clone)]
 pub struct CustomOnResponse {

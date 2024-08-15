@@ -1,49 +1,54 @@
-use std::error::Error;
-use std::rc::Rc;
-use color_eyre::eyre::Result;
+use std::sync::Arc;
+use color_eyre::eyre::{eyre, Result};
+use color_eyre::Report;
 use sea_orm::DatabaseConnection;
 use crate::core::infrastructure::config::Config;
+use crate::core::infrastructure::presentation::repository::user::user_repository::UserRepository;
 use super::{MySQL, PostgreSQL};
 
 /// # Description
 ///     【基础设施】持久性连接组件实例
 /// # Param
 ///     db DatabaseConnection: 数据库连接
+///     user_repository Arc<UserRepository>: 用户仓库
 pub struct Persistence {
     pub db: DatabaseConnection,
+    pub user_repository: Arc<UserRepository>
 }
 
 impl Persistence {
     /// # Description
     ///     新建持久化连接
     /// # Param
-    ///     settings: 配置
+    ///     config Arc<Config>: 配置
     /// # Return
-    ///     Result<Persistence, Box<dyn Error>>
+    ///     Result<Persistence, Report>
     ///         - Persistence: 持久化连接实例
-    ///         - Box<dyn Error>: 错误
-    pub async fn new(config: Rc<Config>) -> Result<Persistence, Box<dyn Error>> {
+    ///         - Report: 错误报告
+    pub async fn new(config: Arc<Config>) -> Result<Persistence, Report> {
         let db = Self::connect_database(config).await?;
-        Ok(Self { db })
+        let user_repository = Arc::new(UserRepository::new(db.clone()).await);
+
+        Ok(Self { db, user_repository })
     }
 
     /// # Description
     ///     数据库连接
     /// # Param
-    ///     settings: 配置
+    ///     config Arc<Config>: 配置
     /// # Return
-    ///     Result<DatabaseConnection, Box<dyn Error + Send + Sync>>
+    ///     Result<DatabaseConnection, Report>
     ///         - DatabaseConnection: 数据库连接
-    ///         - Box<dyn Error + Send + Sync>: 错误
-    async fn connect_database(config: Rc<Config>) -> Result<DatabaseConnection, Box<dyn Error>> {
+    ///         - Report: 错误报告
+    async fn connect_database(config: Arc<Config>) -> Result<DatabaseConnection, Report> {
         // 读取数据
         let persistence_config = &config.persistence;
 
         // 根据驱动类型连接数据库
         let db_task = match persistence_config.driver.as_str() {
-            "mysql" => MySQL::connect(Rc::clone(&config)).await,
-            "postgres" => PostgreSQL::connect(Rc::clone(&config)).await,
-            _ => Err("Don't find this driver".into()),
+            "mysql" => MySQL::connect(Arc::clone(&config)).await,
+            "postgres" => PostgreSQL::connect(Arc::clone(&config)).await,
+            _ => return Err(eyre!("+InfrastructureLayer [Database] Don't find this driver".to_string())),
         };
 
         // 返回 db

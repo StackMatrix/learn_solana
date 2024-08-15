@@ -3,8 +3,8 @@ use sea_orm::prelude::DateTimeUtc;
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 use bcrypt::{hash, verify, DEFAULT_COST};
-use infrastructure::utils::encrypt::hash;
-use crate::core::infrastructure;
+use chrono::{Utc, DateTime};
+use super::role_entity::Model as RoleModel;
 
 /// # Description 用户表
 ///     该结构体代表用户实体，并映射到数据库中的 `users` 表。
@@ -22,8 +22,8 @@ use crate::core::infrastructure;
 ///     created_at: 创建时间
 ///     updated_at: 更新时间
 ///     deleted_at: 删除时间（软删除）
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Deserialize, Serialize)]
-#[sea_orm(table_name = "users")]
+#[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Serialize, Deserialize)]
+#[sea_orm(table_name = "user")]
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
@@ -38,7 +38,7 @@ pub struct Model {
     pub reg_type: i8,
     pub created_at: DateTimeUtc,
     pub updated_at: DateTimeUtc,
-    pub deleted_at: Option<DateTimeUtc>,
+    pub deleted_at: Option<DateTime<Utc>>,
 }
 
 impl Model {
@@ -119,7 +119,7 @@ impl Model {
     /// # Return
     ///     ()
     pub fn soft_delete(&mut self) {
-        self.deleted_at = Some(DateTimeUtc::now());
+        self.deleted_at = Some(Utc::now());
     }
 }
 

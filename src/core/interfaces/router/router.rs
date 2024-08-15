@@ -1,5 +1,5 @@
-use std::error::Error;
 use axum::{routing::get, Router as R};
+use color_eyre::Report;
 use crate::core::interfaces::handler::user::UserHandle;
 
 /// # Description
@@ -15,7 +15,7 @@ impl Router {
     ///     Result<Persistence, Box<dyn Error>>
     ///         - (): None
     ///         - Box<dyn Error>: 错误
-    pub async fn new() -> Result<R, Box<dyn Error>> {
+    pub async fn new() -> Result<R, Report> {
 
         let app = R::new()
             .nest("/v1", Self::v2_routes().await);

@@ -1,6 +1,8 @@
 use std::error::Error;
-use std::rc::Rc;
+use std::sync::Arc;
 use std::time::Duration;
+use color_eyre::eyre::eyre;
+use color_eyre::Report;
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use tracing::{error, info};
 use crate::core::infrastructure::config::Config;
@@ -13,12 +15,12 @@ impl PostgreSQL {
     /// # Description
     ///     PostgreSQL 连接
     /// # Param
-    ///     settings Arc<Mutex<Settings>>: settings 配置
+    ///     config Arc<Config>: config 配置
     /// # Return
-    ///     Result<(), Box<dyn Error + Send + Sync>>
+    ///     Result<DatabaseConnection, Report>
     ///         - DatabaseConnection: 数据库连接
-    ///         - Box<dyn Error + Send + Sync>: 错误
-    pub async fn connect(config: Rc<Config>) -> Result<DatabaseConnection, Box<dyn Error>>{
+    ///         - Report: 错误报告
+    pub async fn connect(config: Arc<Config>) -> Result<DatabaseConnection, Report>{
         // 读取数据
         let persistence_config = &config.persistence;
 
@@ -51,12 +53,12 @@ impl PostgreSQL {
                 }
                 Err(e) => {
                     error!("- [Database] Failed to connect to MySQL: {}", e);
-                    Err(e.into())
+                    Err(eyre!(e))
                 }
             }
         } else {
-            error!("- [Database] MySQL configuration is missing");
-            Err("MySQL configuration is missing".into())
+            error!("- [Database] PostgreSQL configuration is missing");
+            Err(eyre!("PostgreSQL configuration is missing"))
         }
     }
 }

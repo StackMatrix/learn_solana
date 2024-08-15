@@ -1,6 +1,8 @@
 use std::error::Error;
-use std::rc::Rc;
+use std::sync::Arc;
 use std::time::Duration;
+use color_eyre::eyre::eyre;
+use color_eyre::Report;
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 use tracing::{error, info};
 use crate::core::infrastructure::config::Config;
@@ -13,17 +15,17 @@ impl MySQL {
     /// # Description
     ///     MySQL 连接
     /// # Param
-    ///     settings Arc<Mutex<Settings>>: settings 配置
+    ///     config Arc<Config>: config 配置
     /// # Return
-    ///     Result<(), Box<dyn Error + Send + Sync>>
+    ///     Result<DatabaseConnection, Report>
     ///         - DatabaseConnection: 数据库连接
-    ///         - Box<dyn Error + Send + Sync>: 错误
-    pub async fn connect(config: Rc<Config>) -> Result<DatabaseConnection, Box<dyn Error>>{
+    ///         - Report: 错误报告
+    pub async fn connect(config: Arc<Config>) -> Result<DatabaseConnection, Report>{
         // 读取数据
         let persistence_config = &config.persistence;
 
         if let Some(config) = &persistence_config.mysql {
-            info!("+ [Database] Connecting to MySQL at {}:{}", config.host, config.port);
+            info!("+InfrastructureLayer [Database] Connecting to MySQL at {}:{}", config.host, config.port);
 
             // 构建连接字符串
             let connection_string = format!(
@@ -46,17 +48,17 @@ impl MySQL {
             // 连接到数据库
             match Database::connect(opt).await {
                 Ok(connection) => {
-                    info!("+ [Database] Successfully connected to MySQL");
+                    info!("+InfrastructureLayer [Database] Successfully connected to MySQL");
                     Ok(connection)
                 }
                 Err(e) => {
-                    error!("- [Database] Failed to connect to MySQL: {}", e);
-                    Err(e.into())
+                    error!("-InfrastructureLayer [Database] Failed to connect to MySQL: {}", e);
+                    Err(eyre!(e))
                 }
             }
         } else {
-            error!("- [Database] MySQL configuration is missing");
-            Err("MySQL configuration is missing".into())
+            error!("- InfrastructureLayer [Database] MySQL configuration is missing");
+            Err(eyre!("MySQL configuration is missing"))
         }
     }
 }
