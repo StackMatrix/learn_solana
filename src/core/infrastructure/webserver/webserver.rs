@@ -1,10 +1,9 @@
 
-use std::net::{IpAddr, SocketAddr};
+use std::net::SocketAddr;
 use std::sync::Arc;
 use tracing::{info, Level};
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use color_eyre::eyre::{Result, Report};
-use color_eyre::owo_colors::OwoColorize;
 use tokio::sync::Notify;
 use crate::core::infrastructure::log::{CustomOnRequest, CustomOnResponse};
 use crate::core::interfaces::router::Router;

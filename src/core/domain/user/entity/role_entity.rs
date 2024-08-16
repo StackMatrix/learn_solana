@@ -1,9 +1,8 @@
-use sea_orm::{ActiveModelBehavior, DeriveEntityModel, EnumIter, DerivePrimaryKey, ActiveValue};
+use sea_orm::{ActiveModelBehavior, DeriveEntityModel, EnumIter, DerivePrimaryKey};
 use sea_orm::prelude::DateTimeUtc;
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 use chrono::{Utc, DateTime};
-use color_eyre::Report;
 
 /// # Description 用户权限表
 ///     该结构体代表用户权限实体，并映射到数据库中的 role 表。

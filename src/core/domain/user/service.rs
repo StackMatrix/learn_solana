@@ -37,19 +37,6 @@ impl UserService {
             Err(_) => return Err("密码哈希生成失败".into()),
         };
 
-        // id: 0,  // 假设 ID 由数据库自动生成
-        // account,
-        // nickname: None,
-        // avatar: None,
-        // mobile: String::new(),
-        // email,
-        // password: hashed_password,
-        // disable: false,
-        // level: 1,
-        // reg_type: 0,
-        // created_at: chrono::Utc::now(),
-        // updated_at: chrono::Utc::now(),
-        // deleted_at: None,
         let new_user = UserActiveModel {
             id: NotSet,
             account: ActiveValue::set(account.to_owned()),

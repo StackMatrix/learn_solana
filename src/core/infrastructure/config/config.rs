@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use color_eyre::eyre::Result;
 use color_eyre::Report;
-use config::{Config as Conf, ConfigError, File};
+use config::{Config as Conf, File};
 
 #[derive(Debug, Deserialize)]
 pub struct Config {

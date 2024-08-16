@@ -3,17 +3,17 @@ use color_eyre::eyre::{eyre, Result};
 use color_eyre::Report;
 use sea_orm::DatabaseConnection;
 use crate::core::infrastructure::config::Config;
-use crate::core::infrastructure::presentation::repository::user::user_repository::UserRepository;
+use crate::core::infrastructure::presentation::repository::Repository;
 use super::{MySQL, PostgreSQL};
 
 /// # Description
 ///     【基础设施】持久性连接组件实例
 /// # Param
 ///     db DatabaseConnection: 数据库连接
-///     user_repository Arc<UserRepository>: 用户仓库
+///     repository Arc<Repository>: 数据仓库
 pub struct Persistence {
     pub db: DatabaseConnection,
-    pub user_repository: Arc<UserRepository>
+    pub repository: Arc<Repository>
 }
 
 impl Persistence {
@@ -27,9 +27,9 @@ impl Persistence {
     ///         - Report: 错误报告
     pub async fn new(config: Arc<Config>) -> Result<Persistence, Report> {
         let db = Self::connect_database(config).await?;
-        let user_repository = Arc::new(UserRepository::new(db.clone()).await);
+        let repository = Arc::new(Repository::new(db.clone()).await);
 
-        Ok(Self { db, user_repository })
+        Ok(Self { db, repository })
     }
 
     /// # Description

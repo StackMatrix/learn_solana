@@ -1,5 +1,5 @@
 mod system_info;
 mod ssh;
-mod wallet;
+pub mod wallet;
 mod address;
 pub mod encrypt;

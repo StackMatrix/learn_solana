@@ -1,8 +1,7 @@
-use std::error::Error;
 use std::sync::Arc;
 use color_eyre::Report;
 use sea_orm_migration::MigratorTrait;
-use tracing::{error, info};
+use tracing::info;
 use crate::core::infrastructure::{config::Config, log::Log, presentation::model::migration::MigratorHandle, presentation::Persistence, webserver, webserver::WebServer};
 
 pub struct InfrastructureLayer {

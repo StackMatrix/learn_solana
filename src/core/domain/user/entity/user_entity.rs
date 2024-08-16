@@ -4,7 +4,6 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 use bcrypt::{hash, verify, DEFAULT_COST};
 use chrono::{Utc, DateTime};
-use super::role_entity::Model as RoleModel;
 
 /// # Description 用户表
 ///     该结构体代表用户实体，并映射到数据库中的 `users` 表。

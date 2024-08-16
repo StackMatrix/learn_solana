@@ -14,7 +14,6 @@ enum User {
     Password,
     Disable,
     Level,
-    Role,
     RegType,
     CreatedAt,
     UpdatedAt,
@@ -25,8 +24,22 @@ enum User {
 enum Role {
     Table,
     Id,
-    AccountID,
+    UserID,
     Permission,
+    CreatedAt,
+    UpdatedAt,
+    DeletedAt,
+}
+
+#[derive(DeriveIden)]
+enum Wallet {
+    Table,
+    Id,
+    UserID,
+    PubKey,
+    PrivyKey,
+    Balance,
+    Disable,
     CreatedAt,
     UpdatedAt,
     DeletedAt,
@@ -51,7 +64,6 @@ impl MigrationTrait for MigratorHandle {
                 .col(ColumnDef::new(User::Password).string().not_null())
                 .col(ColumnDef::new(User::Disable).boolean().not_null())
                 .col(ColumnDef::new(User::Level).tiny_integer().not_null())
-                .col(ColumnDef::new(User::Role).string().not_null())
                 .col(ColumnDef::new(User::RegType).tiny_integer().not_null())
                 .col(ColumnDef::new(User::CreatedAt).date_time().not_null())
                 .col(ColumnDef::new(User::UpdatedAt).date_time().not_null())
@@ -64,10 +76,27 @@ impl MigrationTrait for MigratorHandle {
                 .table(Role::Table)
                 .if_not_exists()
                 .col(ColumnDef::new(Role::Id).integer().not_null().auto_increment().primary_key())
-                .col(ColumnDef::new(Role::AccountID).string().unique_key().not_null())
+                .col(ColumnDef::new(Role::UserID).integer().not_null())
+                .col(ColumnDef::new(Role::Permission).string().not_null())
                 .col(ColumnDef::new(Role::CreatedAt).date_time().not_null())
                 .col(ColumnDef::new(Role::UpdatedAt).date_time().not_null())
                 .col(ColumnDef::new(Role::DeletedAt).date_time())
+                .to_owned(),
+        ).await?;
+
+        manager.create_table(
+            Table::create()
+                .table(Wallet::Table)
+                .if_not_exists()
+                .col(ColumnDef::new(Wallet::Id).integer().not_null().auto_increment().primary_key())
+                .col(ColumnDef::new(Wallet::UserID).integer().not_null())
+                .col(ColumnDef::new(Wallet::PubKey).string().unique_key().not_null())
+                .col(ColumnDef::new(Wallet::PrivyKey).string().unique_key().not_null())
+                .col(ColumnDef::new(Wallet::Balance).double().not_null())
+                .col(ColumnDef::new(User::Disable).boolean().not_null())
+                .col(ColumnDef::new(Wallet::CreatedAt).date_time().not_null())
+                .col(ColumnDef::new(Wallet::UpdatedAt).date_time().not_null())
+                .col(ColumnDef::new(Wallet::DeletedAt).date_time())
                 .to_owned(),
         ).await?;
 
@@ -79,10 +108,14 @@ impl MigrationTrait for MigratorHandle {
             Table::drop().table(User::Table).if_exists().to_owned()
         ).await?;
 
-
         manager.drop_table(
             Table::drop().table(Role::Table).if_exists().to_owned()
         ).await?;
+
+        manager.drop_table(
+            Table::drop().table(Wallet::Table).if_exists().to_owned()
+        ).await?;
+
         Ok(())
     }
 }

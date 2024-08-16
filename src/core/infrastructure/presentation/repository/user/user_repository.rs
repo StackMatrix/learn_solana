@@ -1,4 +1,4 @@
-use crate::core::domain::user::entity::user_entity::{Model as UserModel, Entity as UserEntity, ActiveModel as UserActiveModel, ActiveModel};
+use crate::core::domain::user::entity::user_entity::{Model as UserModel, Entity as UserEntity, ActiveModel as UserActiveModel};
 use crate::core::domain::user::repository::UserRepositoryInterface;
 use sea_orm::{DatabaseConnection, EntityTrait};
 use sea_orm::entity::prelude::*;
@@ -25,9 +25,9 @@ impl UserRepositoryInterface for UserRepository {
     ///     user User: 需要保存的用户实体
     /// # Return
     ///     Result<User, Report>: 保存结果，包括保存后的用户模型
-    async fn save(&self, user: ActiveModel) -> Result<(), Report> {
+    async fn save(&self, user: UserActiveModel) -> Result<(), Report> {
         // 显式地指定 ActiveModel 类型
-        let mut user_model: UserActiveModel = user.into();
+        let user_model: UserActiveModel = user.into();
 
         // 保存用户数据
         user_model.save(self.db.as_ref()).await?;
