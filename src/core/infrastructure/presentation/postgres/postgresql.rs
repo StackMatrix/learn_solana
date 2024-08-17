@@ -8,7 +8,7 @@ use crate::core::infrastructure::config::Config;
 
 /// # Description
 ///     PostgreSQL 连接
-pub struct PostgreSQL {}
+pub struct PostgreSQL;
 
 impl PostgreSQL {
     /// # Description

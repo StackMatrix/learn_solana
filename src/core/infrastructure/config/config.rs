@@ -3,6 +3,18 @@ use color_eyre::eyre::Result;
 use color_eyre::Report;
 use config::{Config as Conf, File};
 
+/// # Description
+///     #[derive(Debug, Deserialize)]
+///     Config 配置
+/// # Fields
+///     pub app: AppConfig, APP 配置
+///     pub log: LogConfig, 日志配置
+///     pub persistence: PersistenceConfig, 持久化连接配置
+///     pub jwt: JwtConfig, JWT 配置
+///     pub redis: RedisConfig, Redis 配置
+///     pub storage: StorageConfig, 存储配置
+///     pub queue: QueueConfig, 消息队列配置
+///     pub smtp: SmtpConfig, SMTP 邮件配置
 #[derive(Debug, Deserialize)]
 pub struct Config {
     pub app: AppConfig,
@@ -15,6 +27,14 @@ pub struct Config {
     pub smtp: SmtpConfig,
 }
 
+/// # Description
+///     #[derive(Debug, Deserialize)]
+///     App 配置
+/// # Fields
+///     pub env: String, 项目环境调试级别
+///     pub port: u16, 程序运行端口
+///     pub app_name: String, 程序名称
+///     pub ip_addr: String, 程序运行 IP 地址
 #[derive(Debug, Deserialize)]
 pub struct AppConfig {
     pub env: String,
@@ -23,6 +43,17 @@ pub struct AppConfig {
     pub ip_addr: String,
 }
 
+/// # Description
+///     #[derive(Debug, Deserialize)]
+///     Log 配置
+/// # Fields
+///     pub level: String, 日志级别
+///     pub root_dir: String, 日志目录
+///     pub filename: String,
+///     pub max_backups: u32,
+///     pub max_size: u32,
+///     pub max_age: u32,
+///     pub compress: bool,
 #[derive(Debug, Deserialize)]
 pub struct LogConfig {
     pub level: String,
@@ -86,6 +117,14 @@ pub struct PostgresSQLConfig {
     pub log_filename: String,
 }
 
+/// # Description
+///     #[derive(Debug, Deserialize)]
+///     JWT 配置
+/// # Fields
+///     secret: String, JWT 密钥
+///     jwt_ttl: u64, JWT 的存活时间（秒）
+///     jwt_blacklist_grace_period: u64, 黑名单宽限期（秒）
+///     refresh_grace_period: u64, 刷新令牌宽限期（秒）
 #[derive(Debug, Deserialize)]
 pub struct JwtConfig {
     pub secret: String,

@@ -15,6 +15,7 @@ use crate::core::{
 pub struct Bootstrap {
     pub infrastructure_layer: Arc<InfrastructureLayer>,
     pub domain_layer: Arc<DomainLayer>,
+
 }
 
 impl Bootstrap {
@@ -34,6 +35,9 @@ impl Bootstrap {
         // 引导领域层的启动
         let domain_layer = Arc::new(DomainLayer::new(infrastructure_layer.clone()).await);
         info!("+Bootstrap [DomainLayer] Load complete.");
+
+
+
 
         Ok(Self{ infrastructure_layer, domain_layer })
     }

@@ -14,11 +14,12 @@ mod tests {
         let user_service = bootstrap.domain_layer.user_domain.user_service.clone();
 
         // 测试用户注册
-        let result = user_service.register_user("test_user".into(), "test_user@example.com".into(), "password123".into()).await;
+        let result = user_service.register_user("18160114162".into(), "password123".into()).await;
         assert!(result.is_ok(), "用户注册失败");
 
         // 测试用户登录
-        let login_result = user_service.login_user("test_user".into(), "password123".into()).await;
+        let login_result = user_service.login_user("18160114162".into(), "password123".into()).await;
+        info!("{}", format!("{:?}", login_result));
         assert!(login_result.is_ok(), "用户登录失败");
 
         // 在 axum_shutdown 调用之前，确保 infrastructure_layer 被正确引用
@@ -47,19 +48,13 @@ mod tests {
         assert!(generate_result.is_ok(), "添加钱包金额失败");
 
         // 添加钱包金额
-        // let deposit_result = wallet_service.deposit(
-        //     1, 1.2
-        // ).await;
-        //
+        // let deposit_result = wallet_service.deposit(1, 1.2).await;
         // info!("deposit_result {:?}", deposit_result);
         //
         // assert!(deposit_result.is_ok(), "添加钱包金额失败");
         //
         // // 钱包转账
-        // let withdraw_result = wallet_service.withdraw(
-        //     1, 1.1
-        // ).await;
-
+        // let withdraw_result = wallet_service.withdraw(1, 1.1).await;
         // info!("withdraw_result {:?}", withdraw_result);
 
         // assert!(withdraw_result.is_ok(), "钱包转账失败");

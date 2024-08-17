@@ -5,6 +5,7 @@ use crate::core::domain::wallet::repository::WalletRepositoryInterface;
 // use std::net::SocketAddr;
 use chrono::Utc;
 use sea_orm::{ActiveValue, IntoActiveModel, NotSet};
+use crate::core::infrastructure::InfrastructureLayer;
 // use solana_client::rpc_client::RpcClient;
 use super::entity::Address;
 use super::entity::{ActiveModel as WalletActiveModel, Model as WalletModel};
@@ -21,10 +22,11 @@ impl WalletService {
     /// # Description
     ///     创建新的钱包服务
     /// # Param
-    ///     repository: Arc<dyn WalletRepositoryInterface>: 钱包仓储接口的引用
+    ///     infrastructure_layer: Arc<InfrastructureLayer>: 基础设施层为领域层提供服务
     /// # Return
     ///     WalletService: 钱包服务实例
-    pub fn new(repository: Arc<dyn WalletRepositoryInterface>) -> Self {
+    pub fn new(infrastructure_layer: Arc<InfrastructureLayer>) -> Self {
+        let repository = infrastructure_layer.persistence.repository.wallet_repository.clone();
         Self { repository }
     }
 

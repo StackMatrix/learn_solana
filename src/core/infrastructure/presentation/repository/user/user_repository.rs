@@ -1,6 +1,6 @@
 use crate::core::domain::user::entity::user_entity::{Model as UserModel, Entity as UserEntity, ActiveModel as UserActiveModel};
 use crate::core::domain::user::repository::UserRepositoryInterface;
-use sea_orm::{DatabaseConnection, EntityTrait};
+use sea_orm::{Condition, DatabaseConnection, EntityTrait};
 use sea_orm::entity::prelude::*;
 use sea_orm::ActiveModelTrait;
 use async_trait::async_trait;
@@ -42,9 +42,9 @@ impl UserRepositoryInterface for UserRepository {
     /// # Return
     ///     Result<Option<User>, Report>: 查找到的用户，如果不存在返回 None
     async fn find_by_id(&self, id: i32) -> Result<Option<UserModel>, Report> {
-        let result = UserEntity::find_by_id(id).one(self.db.as_ref()).await;
+        let result = UserEntity::find_by_id(id).one(self.db.as_ref()).await?;
 
-        Ok(result?)
+        Ok(result)
     }
 
     /// # Description
@@ -58,8 +58,34 @@ impl UserRepositoryInterface for UserRepository {
             // 使用完全限定语法消除歧义
             .filter(<UserEntity as EntityTrait>::Column::Account.eq(account))
             .one(self.db.as_ref())
-            .await;
+            .await?;
 
-        Ok(result?)
+        Ok(result)
+    }
+
+    /// # Description
+    ///     查询电话或邮箱是否存在
+    /// # Param
+    ///     identifier String: 被验证的字段
+    /// # Return
+    ///     Result<Option<UserModel>, String>: 保存结果，包括保存后的用户模型
+    async fn find_by_mobile_or_email_account(&self, identifier: String) -> Result<Option<UserModel>, Report> {
+        // 检查字段信息
+        if identifier.is_empty() {
+            return Err(Report::msg("+Domain [User] Identifier 字段不能为空"));
+        }
+
+        // 查询该用户是否存在
+        let result = UserEntity::find()
+            .filter(
+                Condition::any()
+                    .add(<UserEntity as EntityTrait>::Column::Mobile.eq(identifier.clone()))
+                    .add(<UserEntity as EntityTrait>::Column::Email.eq(identifier.clone()))
+                    .add(<UserEntity as EntityTrait>::Column::Account.eq(identifier))
+            )
+            .one(self.db.as_ref())
+            .await?;
+
+        Ok(result)
     }
 }

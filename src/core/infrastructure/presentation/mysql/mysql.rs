@@ -8,7 +8,7 @@ use crate::core::infrastructure::config::Config;
 
 /// # Description
 ///     MySQL 连接
-pub struct MySQL {}
+pub struct MySQL;
 
 impl MySQL {
     /// # Description

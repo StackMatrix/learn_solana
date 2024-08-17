@@ -3,6 +3,7 @@ use sea_orm::prelude::DateTimeUtc;
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 use bcrypt::{hash, verify, DEFAULT_COST};
+use color_eyre::Result;
 use chrono::{Utc, DateTime};
 
 /// # Description 用户表
@@ -29,8 +30,8 @@ pub struct Model {
     pub account: String,
     pub nickname: Option<String>,
     pub avatar: Option<String>,
-    pub mobile: String,
-    pub email: String,
+    pub mobile: Option<String>,
+    pub email: Option<String>,
     pub password: String,
     pub disable: bool,
     pub level: i8,
@@ -83,7 +84,7 @@ impl Model {
             self.avatar = Some(av);
         }
         if let Some(mob) = mobile {
-            self.mobile = mob;
+            self.mobile = Some(mob);
         }
     }
 

@@ -7,4 +7,5 @@ pub trait UserRepositoryInterface {
     async fn save(&self, user: ActiveModel) -> Result<(), Report>;
     async fn find_by_id(&self, id: i32) -> Result<Option<UserModel>, Report>;
     async fn find_by_account(&self, account: String) -> Result<Option<UserModel>, Report>;
+    async fn find_by_mobile_or_email_account(&self, identifier: String) -> Result<Option<UserModel>, Report>;
 }

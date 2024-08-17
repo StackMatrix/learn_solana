@@ -38,7 +38,8 @@ time = "0.3.36" # 时间库
 bcrypt = "0.15.1" # 加密库
 chrono = "0.4.38" # 日期时钟库
 sysinfo = {  version = "0.28.3", default-features = false, features = ["default"] } # 系统信息的库
-
+rand = "0.8.5"  # 生成随机数的库
+jsonwebtoken = "9.3.0" # jwt库
 
 # 修补几个crates为solana
 [patch.crates-io.aes-gcm-siv]
