@@ -108,7 +108,7 @@ impl UserService {
                 Ok(())
             },
             Err(e) => {
-                error!("用户注册失败1111: {:?}", e);
+                error!("用户注册失败: {:?}", e);
                 Err(Report::msg("用户注册失败"))
             },
         }

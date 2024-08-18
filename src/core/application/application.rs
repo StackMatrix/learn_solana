@@ -1,5 +1,5 @@
 use std::sync::Arc;
-// use super::jwt_service::JwtService;
+use crate::core::domain::user::service::UserService;
 use crate::core::infrastructure::InfrastructureLayer;
 
 /// # Description
@@ -8,6 +8,7 @@ use crate::core::infrastructure::InfrastructureLayer;
 ///     jwt_config Arc<JwtService>: Arc<JwtService> 的实例，用于提供必要的服务
 pub struct ApplicationLayer {
     // pub jwt_service: Arc<JwtService>,
+    // pub user_service: Arc<UserService>,
 }
 
 impl ApplicationLayer {
@@ -23,6 +24,7 @@ impl ApplicationLayer {
 
         Self {
             // jwt_service,
+            // user_service
         }
     }
 }
