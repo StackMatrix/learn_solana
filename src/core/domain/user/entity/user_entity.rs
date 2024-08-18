@@ -1,4 +1,4 @@
-use sea_orm::{ActiveModelBehavior, DeriveEntityModel, EnumIter, DerivePrimaryKey};
+use sea_orm::{ActiveModelBehavior, DeriveEntityModel, EnumIter, DerivePrimaryKey, ActiveValue};
 use sea_orm::prelude::DateTimeUtc;
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -42,6 +42,41 @@ pub struct Model {
 }
 
 impl Model {
+    /// # Description
+    ///     创建一个新用户
+    /// # Param
+    ///     account: String 系统生成的账号
+    ///     email: String 用户输入的邮箱
+    ///     mobile: String 用户输入的电话
+    ///     password: String 加密后的密码
+    /// # Return
+    ///     bool: 是否验证通过
+    pub fn new(
+        account: String,
+        email: String,
+        mobile: String,
+        password: String,
+    ) -> ActiveModel {
+        // 设置当前时间
+        let now_datetime = Utc::now();
+
+        ActiveModel {
+            id: ActiveValue::NotSet,
+            account: ActiveValue::set(account.to_owned()),
+            nickname: Default::default(),
+            avatar: Default::default(),
+            mobile: ActiveValue::set(Some(mobile)),
+            email: ActiveValue::set(Some(email)),
+            password: ActiveValue::set(password.to_owned()),
+            disable: ActiveValue::set(false),
+            level: ActiveValue::set(1),
+            reg_type: ActiveValue::set(0),
+            created_at: ActiveValue::set(now_datetime),
+            updated_at: ActiveValue::set(now_datetime),
+            deleted_at: Default::default(),
+        }
+    }
+
     /// # Description
     ///     验证用户密码是否正确
     /// # Param

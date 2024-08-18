@@ -1,9 +1,9 @@
 use std::sync::Arc;
-use crate::core::domain::user::service::UserService;
+use crate::core::domain::user::domain_service::UserDomainService;
 use crate::core::infrastructure::InfrastructureLayer;
 
 pub struct UserDomain {
-    pub user_service: Arc<UserService>,
+    pub domain_service: Arc<UserDomainService>,
 }
 
 impl UserDomain {
@@ -15,10 +15,10 @@ impl UserDomain {
     ///     Self: 初始化后的用户领域实例
     pub async fn new(infrastructure_layer: Arc<InfrastructureLayer>) -> Self {
         // 初始化用户服务并注入仓库
-        let user_service = Arc::new(UserService::new(infrastructure_layer));
+        let domain_service = Arc::new(UserDomainService::new(infrastructure_layer));
 
         Self {
-            user_service
+            domain_service
         }
     }
 }

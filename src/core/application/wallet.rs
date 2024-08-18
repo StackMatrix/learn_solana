@@ -1,4 +1,4 @@
-// service.rs
+// domain_service
 // pub struct WalletService {
 //     // 依赖注入，例如仓储
 //     wallet_repository: Box<dyn WalletRepository>,

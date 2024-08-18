@@ -1,5 +1,5 @@
 use crate::core::domain::user::entity::user_entity::{Model as UserModel, Entity as UserEntity, ActiveModel as UserActiveModel};
-use crate::core::domain::user::repository::UserRepositoryInterface;
+use crate::core::domain::user::repository_interface::UserRepositoryInterface;
 use sea_orm::{Condition, DatabaseConnection, EntityTrait};
 use sea_orm::entity::prelude::*;
 use sea_orm::ActiveModelTrait;

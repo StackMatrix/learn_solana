@@ -11,14 +11,14 @@ mod tests {
         let bootstrap = Bootstrap::run().await?;
 
         // 获取用户服务
-        let user_service = bootstrap.domain_layer.user_domain.user_service.clone();
+        let user_application = bootstrap.application_layer.user_application.clone();
 
         // 测试用户注册
-        let result = user_service.register_user("18160114162".into(), "password123".into()).await;
+        let result = user_application.register_user("18160114162".into(), "password123".into()).await;
         assert!(result.is_ok(), "用户注册失败");
 
         // 测试用户登录
-        let login_result = user_service.login_user("18160114162".into(), "password123".into()).await;
+        let login_result = user_application.login_user("18160114162".into(), "password123".into()).await;
         info!("{}", format!("{:?}", login_result));
         assert!(login_result.is_ok(), "用户登录失败");
 

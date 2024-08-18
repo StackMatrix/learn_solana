@@ -6,22 +6,25 @@ use crate::core::{
     domain::DomainLayer,
     infrastructure::InfrastructureLayer,
 };
+use crate::core::application::ApplicationLayer;
 
 /// # Description
 ///     【app】引导 DDD 每依层次运行
-/// # Param
-///     domain_layer  Arc<InfrastructureLayer>: 领域层
-///     infrastructure_layer Arc<InfrastructureLayer>: 基础设施层
+/// # Fields
+///     domain_layer  Arc<InfrastructureLayer> - 领域层
+///     infrastructure_layer Arc<InfrastructureLayer> - 基础设施层
+///     application_layer: Arc<ApplicationLayer> - 基础设施层
 pub struct Bootstrap {
     pub infrastructure_layer: Arc<InfrastructureLayer>,
     pub domain_layer: Arc<DomainLayer>,
+    pub application_layer: Arc<ApplicationLayer>
 
 }
 
 impl Bootstrap {
     /// # Description
     ///     初始化依赖
-    /// # Param
+    /// # Params
     ///     None
     /// # Return
     ///     Result<Self, Report>
@@ -36,9 +39,12 @@ impl Bootstrap {
         let domain_layer = Arc::new(DomainLayer::new(infrastructure_layer.clone()).await);
         info!("+Bootstrap [DomainLayer] Load complete.");
 
+        // 引导应用层的启动
+        let application_layer = Arc::new(ApplicationLayer::new(infrastructure_layer.clone(), domain_layer.clone()).await);
+        info!("+Bootstrap [ApplicationLayer] Load complete.");
 
 
 
-        Ok(Self{ infrastructure_layer, domain_layer })
+        Ok(Self{ infrastructure_layer, domain_layer, application_layer })
     }
 }
