@@ -7,7 +7,7 @@ use crate::core::infrastructure::InfrastructureLayer;
 /// # Description
 ///     领域层，管理领域逻辑的核心组件
 pub struct DomainLayer {
-    pub wallet_domain: Arc<WalletDomain>,
+    // pub wallet_domain: Arc<WalletDomain>,
     pub user_domain: Arc<UserDomain>,
 }
 
@@ -24,12 +24,12 @@ impl DomainLayer {
         info!("+DomainLayer [UserDomain] Instant config complete.");
 
         // 初始化钱包子领域
-        let wallet_domain = Arc::new(WalletDomain::new(infrastructure_layer).await);
-        info!("+DomainLayer [WalletDomain] Instant config complete.");
+        // let wallet_domain = Arc::new(WalletDomain::new(infrastructure_layer).await);
+        // info!("+DomainLayer [WalletDomain] Instant config complete.");
 
         Self {
-            user_domain,
-            wallet_domain,
+            user_domain: user_domain.clone(),
+            // wallet_domain: wallet_domain.clone(),
         }
     }
 }

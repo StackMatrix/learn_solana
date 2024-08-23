@@ -7,6 +7,7 @@ use crate::core::{
     infrastructure::InfrastructureLayer,
 };
 use crate::core::application::ApplicationLayer;
+use crate::core::presentation::PresentationLayer;
 
 /// # Description
 ///     【app】引导 DDD 每依层次运行
@@ -14,11 +15,12 @@ use crate::core::application::ApplicationLayer;
 ///     domain_layer  Arc<InfrastructureLayer> - 领域层
 ///     infrastructure_layer Arc<InfrastructureLayer> - 基础设施层
 ///     application_layer: Arc<ApplicationLayer> - 基础设施层
+///     interface_layer: Arc<InterfaceLayer> - 接口层
 pub struct Bootstrap {
     pub infrastructure_layer: Arc<InfrastructureLayer>,
     pub domain_layer: Arc<DomainLayer>,
-    pub application_layer: Arc<ApplicationLayer>
-
+    pub application_layer: Arc<ApplicationLayer>,
+    pub presentation_layer: Arc<PresentationLayer>
 }
 
 impl Bootstrap {
@@ -43,8 +45,10 @@ impl Bootstrap {
         let application_layer = Arc::new(ApplicationLayer::new(infrastructure_layer.clone(), domain_layer.clone()).await);
         info!("+Bootstrap [ApplicationLayer] Load complete.");
 
+        // 引导接口层的启动
+        let presentation_layer = Arc::new(PresentationLayer::new(infrastructure_layer.clone(), domain_layer.clone(), application_layer.clone()).await);
+        info!("+Bootstrap [InterfaceLayer] Load complete.");
 
-
-        Ok(Self{ infrastructure_layer, domain_layer, application_layer })
+        Ok(Self{ infrastructure_layer, domain_layer, application_layer, presentation_layer })
     }
 }

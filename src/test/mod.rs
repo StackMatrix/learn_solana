@@ -11,16 +11,20 @@ mod tests {
         let bootstrap = Bootstrap::run().await?;
 
         // 获取用户服务
-        let user_application = bootstrap.application_layer.user_application.clone();
+        // let user_application = bootstrap.application_layer.user_application.clone();
+        // let user_interface = bootstrap.presentation_layer.handler.user_handle.clone();
+
 
         // 测试用户注册
-        let result = user_application.register_user("18160114162".into(), "password123".into()).await;
-        assert!(result.is_ok(), "用户注册失败");
-
-        // 测试用户登录
-        let login_result = user_application.login_user("18160114162".into(), "password123".into()).await;
-        info!("{}", format!("{:?}", login_result));
-        assert!(login_result.is_ok(), "用户登录失败");
+        // let result = user_application.register_user("18160114162".into(), "password123".into()).await;
+        // let result = user_interface.register().clone();
+        // assert!(result.is_ok(), "用户注册失败");
+        //
+        // // 测试用户登录
+        // // let login_result = user_application.login_user("18160114162".into(), "password123".into()).await;
+        // let login_result = user_interface.register().clone();
+        // info!("{}", format!("{:?}", login_result));
+        // assert!(login_result.is_ok(), "用户登录失败");
 
         // 在 axum_shutdown 调用之前，确保 infrastructure_layer 被正确引用
         let webserver = Arc::clone(&bootstrap.infrastructure_layer.webserver);

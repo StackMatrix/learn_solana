@@ -1,5 +1,6 @@
 use std::sync::Arc;
 use chrono::{Duration, Utc};
+use color_eyre::Report;
 use serde::{Deserialize, Serialize};
 use jsonwebtoken::{Algorithm, decode, DecodingKey, encode, EncodingKey, Header, Validation};
 use crate::core::infrastructure::config::{Config, JwtConfig };
@@ -13,9 +14,19 @@ pub struct Jwt {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Claims {
-    sub: String,
+struct CustomClaims {
     exp: usize,
+    iat: usize,
+    iss: String,
+    nbf: usize,
+    sub: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct TokenOutPut {
+    access_token: String,
+    expires_in: u64,
+    token_type: String,
 }
 
 impl Jwt {
@@ -38,34 +49,59 @@ impl Jwt {
         Self { jwt_config }
     }
 
-    /// 生成 JWT
-    pub fn create_jwt(&self, user_id: &str) -> String {
-        let expiration = Utc::now()
-            .checked_add_signed(Duration::seconds(self.jwt_config.jwt_ttl as i64))
-            .expect("valid timestamp")
-            .timestamp() as usize;
+    /// Description
+    ///     生成 JWT
+    /// Params
+    ///     user_id: &str - 用户id
+    /// Return
+    ///     Result<TokenOutPut, Report>
+    ///         - TokenOutPut jwt 信息输出
+    ///         - Report 错误报告
+    pub fn create_jwt(&self, user_id: &str) -> Result<TokenOutPut, Report> {
+        let now = Utc::now();
 
-
-        let claims = Claims {
-            sub: user_id.to_owned(),
-            exp: expiration,
+        // 自定义 claims
+        let claims = CustomClaims {
+            exp: (now + Duration::seconds(self.jwt_config.jwt_ttl as i64)).timestamp() as usize,
+            iat: now.timestamp() as usize,
+            iss: "GuardName".to_string(),
+            nbf: (now.timestamp() - 1000) as usize,
+            sub: user_id.to_string(),
         };
 
-        encode(
+        // 生成 access_token
+        let access_token = encode(
             &Header::new(Algorithm::HS256),
             &claims,
             &EncodingKey::from_secret(self.jwt_config.secret.as_ref()),
-        ).expect("JWT Token creation failed")
+        )?;
+
+        // 输出 token 信息
+        let token_data = TokenOutPut {
+            access_token,
+            expires_in: self.jwt_config.jwt_ttl,
+            token_type: "Bearer".to_string(),
+        };
+
+        Ok(token_data)
     }
 
-    /// 验证 JWT
-    pub fn validate_jwt(&self, token: &str) -> Result<Claims, String> {
-        decode::<Claims>(
+    /// Description
+    ///     验证 JWT
+    /// Params
+    ///     token: &str - token
+    /// Return
+    ///     Result<CustomClaims, Report>
+    ///         - CustomClaims 自定义 Claims
+    ///         - Report 错误报告
+    pub fn validate_jwt(&self, token: &str) -> Result<CustomClaims, Report> {
+        // 校验 jwt 是否正确
+        let get_jwt = decode::<CustomClaims>(
             token,
             &DecodingKey::from_secret(self.jwt_config.secret.as_ref()),
             &Validation::new(Algorithm::HS256),
-        )
-            .map(|data| data.claims)
-            .map_err(|err| err.to_string())
+        ).map(|data| data.claims);
+
+        Ok(get_jwt?)
     }
 }

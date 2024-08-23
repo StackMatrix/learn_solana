@@ -71,7 +71,7 @@ impl UserRepositoryInterface for UserRepository {
     ///     Result<Option<UserModel>, String>: 保存结果，包括保存后的用户模型
     async fn find_by_mobile_or_email_account(&self, identifier: String) -> Result<Option<UserModel>, Report> {
         // 检查字段信息
-        if identifier.is_empty() {
+        if identifier.clone().is_empty() {
             return Err(Report::msg("+Domain [User] Identifier 字段不能为空"));
         }
 
@@ -81,7 +81,7 @@ impl UserRepositoryInterface for UserRepository {
                 Condition::any()
                     .add(<UserEntity as EntityTrait>::Column::Mobile.eq(identifier.clone()))
                     .add(<UserEntity as EntityTrait>::Column::Email.eq(identifier.clone()))
-                    .add(<UserEntity as EntityTrait>::Column::Account.eq(identifier))
+                    .add(<UserEntity as EntityTrait>::Column::Account.eq(identifier.clone()))
             )
             .one(self.db.as_ref())
             .await?;

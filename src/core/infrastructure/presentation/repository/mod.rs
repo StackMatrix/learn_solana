@@ -1,5 +1,5 @@
 pub mod user;
 pub mod wallet;
-mod repository;
+pub(crate) mod repository;
 
 pub use repository::Repository;

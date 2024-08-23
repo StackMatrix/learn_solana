@@ -15,10 +15,10 @@ impl UserDomain {
     ///     Self: 初始化后的用户领域实例
     pub async fn new(infrastructure_layer: Arc<InfrastructureLayer>) -> Self {
         // 初始化用户服务并注入仓库
-        let domain_service = Arc::new(UserDomainService::new(infrastructure_layer));
+        let domain_service = Arc::new(UserDomainService::new(infrastructure_layer).await);
 
         Self {
-            domain_service
+            domain_service: domain_service.clone()
         }
     }
 }

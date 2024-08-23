@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 # == 基础框架 ==
-axum = "0.7.5" # web 框架
+axum = { version = "0.7.5", features = ["macros"]} # web 框架
 tokio = { version = "1.39.2", features = ["full"]} # 异步框架
 
 # == 基础信息 ==
@@ -19,7 +19,7 @@ sea-schema = "0.16.0-rc.1" # schema 表
 sea-orm-migration = "1.0.0-rc.7" # orm 迁移
 
 # == 日志 ==
-tower-http = { version = "0.5.2", features = ["trace"] } # http 日志记录
+tower-http = { version = "0.5.2", features = ["trace", "set-header", "auth"] } # HTTP特定中间件和实用程序的集合
 color-eyre = "0.6.3" # 日志错误颜色
 tklog = "0.0.9" # tklog 日志
 tracing = "0.1.40" # tracing 日志
@@ -41,6 +41,7 @@ sysinfo = {  version = "0.28.3", default-features = false, features = ["default"
 rand = "0.8.5"  # 生成随机数的库
 jsonwebtoken = "9.3.0"
 uuid = "1.10.0" # jwt库
+
 
 # 修补几个crates为solana
 [patch.crates-io.aes-gcm-siv]
