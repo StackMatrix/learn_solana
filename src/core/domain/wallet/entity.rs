@@ -14,7 +14,7 @@ pub enum WalletAddress {
     DevNet,
     TestNet,
     MainNet,
-    CustomPpc
+    CustomPpc(String),  // 修改 CustomPpc 以接受自定义 RPC URL
 }
 
 impl From<WalletAddress> for String {
@@ -23,7 +23,7 @@ impl From<WalletAddress> for String {
             WalletAddress::DevNet => "https://api.devnet.solana.com".into(),
             WalletAddress::TestNet => "https://api.testnet.solana.com".into(),
             WalletAddress::MainNet => "http://api.mainnet-beta.solana.com".into(),
-            WalletAddress::CustomPpc => platform.into(),
+            WalletAddress::CustomPpc(url) => url,  // 返回自定义的 RPC URL
         }
     }
 }

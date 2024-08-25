@@ -31,6 +31,7 @@ tracing-subscriber = {version = "0.3.18", features = ["env-filter", "time", "loc
 solana-program = "2.0.7" # solana 程序
 solana-client = "2.0.7" # 用于连接到 Solana RPC 服务器的客户端
 solana-sdk = "2.0.7" # 使用 Solana SDK Crate 用 Rust 编写客户端应用程序
+solana-transaction-status = "2.0.7" # 定义 solana 状态类型
 tiny-bip39 = "1.0.0" # BIP-39 比特币助记码库。Tiny-bip39 是 bip39 板条箱的一个分支，修复了 v0.6。BIP-0039 的 Rust 实现
 
 

@@ -1,5 +1,4 @@
-use std::error::Error;
-use std::{io, thread};
+use std::io;
 use std::io::Write;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -9,6 +8,8 @@ use chrono::{DateTime, NaiveDateTime, Utc};
 use color_eyre::{Report, Result};
 use sea_orm::IntoActiveModel;
 use solana_client::nonblocking::rpc_client::RpcClient;
+use solana_client::rpc_config::RpcBlockConfig;
+use solana_client::rpc_response::RpcVersionInfo;
 use tracing::error;
 use crate::core::domain::DomainLayer;
 use crate::core::domain::wallet::repository::WalletRepositoryInterface;
@@ -23,7 +24,7 @@ use solana_sdk::account::from_account;
 use solana_sdk::commitment_config::CommitmentConfig;
 use solana_sdk::signature::{keypair_from_seed, write_keypair_file, Keypair, Signer};
 use solana_sdk::transaction::Transaction;
-use crate::core::domain::wallet::entity::WalletAddress;
+use solana_transaction_status::{EncodedConfirmedBlock, UiTransactionEncoding};
 
 pub struct WalletApplication {
     domain_layer: Arc<DomainLayer>,
@@ -108,10 +109,10 @@ impl WalletApplication {
     /// # Description
     ///     获取 Solana 集群的当前版本和时间信息
     /// # Params
-    ///     client: RpcClient - RPC 客户端
+    ///     client: &RpcClient - RPC 客户端实例
     /// # Return
     ///     Result<(), Report>: 成功时返回Ok()，失败时返回错误信息
-    pub async fn get_cluster_info(client: &RpcClient) -> Result<(), Report> {
+    pub async fn get_cluster_info(client: &RpcClient) -> Result<RpcVersionInfo, Report> {
         // 获取服务器正在运行的 Solana 版本
         let version = client.get_version().await?;
 
@@ -150,14 +151,14 @@ impl WalletApplication {
             datetime.format("%Y-%m-%d %H:%M:%S")
         );
 
-        Ok(())
+        Ok(version)
     }
 
 
     /// # Description
     ///     获取 Solana 的总供应量和流通供应量
     /// # Params
-    ///     client: RpcClient - RPC 客户端
+    ///     client: &RpcClient - RPC 客户端实例
     /// # Return
     ///     Result<(), Report>: 成功时返回Ok()，失败时返回错误信息。
     pub async fn get_supply(client: &RpcClient) -> Result<(), Report> {
@@ -212,7 +213,7 @@ impl WalletApplication {
     ///     获取 Solana 钱包金额
     /// # Params
     ///     address: &str - 钱包地址
-    ///     client: &RpcClient - RPC 客户端
+    ///     client: &RpcClient - RPC 客户端实例
     /// # Return
     ///     Result<(), Report>: 成功时返回Ok()，失败时返回错误信息。
     pub async fn get_balance(address: &str, client: &RpcClient) -> Result<(), Report> {
@@ -232,7 +233,7 @@ impl WalletApplication {
     /// # Params
     ///     address: &str - 要空投的钱包地址
     ///     sol: f64 - Solana 金额
-    ///     client: &RpcClient - RPC 客户端
+    ///     client: &RpcClient - RPC 客户端实例
     /// # Return
     ///     Result<(), Report>: 成功时返回Ok()，失败时返回错误信息。
     pub async fn airdrop_sol(address: &str, sol: f64, client: &RpcClient) -> Result<(), Report>  {
@@ -270,7 +271,7 @@ impl WalletApplication {
     /// # Description
     ///     将 Solana 钱包的资金转移到另一个地址
     /// # Params
-    ///     client: &RpcClient - RPC 客户端
+    ///     client: &RpcClient - RPC 客户端实例
     ///     keypair: &Keypair - 密钥对
     ///     to_key: &str - 要转移的地址
     ///     sol_amount: f64 - 要转移的金额
@@ -321,6 +322,195 @@ impl WalletApplication {
                 println!("Error transferring sol: {}", e);
             }
         }
+
+        Ok(())
+    }
+
+
+    /// # Description
+    ///     获取 Solana 区块和交易数量
+    /// # Params
+    ///     client: &RpcClient - RPC 客户端实例
+    ///     block_num: u64 - 区块数
+    /// # Return
+    ///     Result<EncodedConfirmedBlock, Report>: 成功时返回Ok(EncodedConfirmedBlock)，失败时返回错误信息。
+    pub async fn get_block(client: &RpcClient, block_num: u64) -> Result<EncodedConfirmedBlock, Report>  {
+        println!("Getting block number: {}", block_num);
+
+        // 交易编码为 Base 64 (因为 Base 64 编码可以保存任何受支持大小的帐户信息)
+        // 将支持的最大交易版本设置为0（否则，我们将遇到不受支持的版本的错误）
+        let config = RpcBlockConfig {
+            encoding: Some(UiTransactionEncoding::Base64),
+            max_supported_transaction_version: Some(0),
+            ..Default::default()
+        };
+
+        // 使用此配置对象通过调用来获取 client.get_block_with_config
+        // 返回有关账本中已确认区块的身份和交易信息
+        let block = client.get_block_with_config(block_num, config).await?;
+
+        // 将返回结果的块数据
+        let encoded_block: EncodedConfirmedBlock = block.into();
+
+        Ok(encoded_block)
+    }
+
+
+    /// # Description
+    ///     统计 Solana 用户交易量
+    /// # Params
+    ///     block: &EncodedConfirmedBlock - 确认的交易块
+    /// # Return
+    ///     Result<u64, Report>: 成功时返回Ok(u64)即用户交易数量，失败时返回错误信息。
+    pub async fn count_user_transactions(block: &EncodedConfirmedBlock) -> Result<u64, Report> {
+        let mut user_transactions_count: u64 = 0;
+
+        // 开始循环遍历所有交易
+        for transaction_status in &block.transactions {
+            // 解码这个对象
+            // 该对象包含一个 message 字段，该字段包含 instructions 和 static_account_keys。
+            let transaction = transaction_status.transaction.decode().unwrap();
+            // 此 static_account_keys 数组包含交易中使用的程序 ID（程序公钥）
+            let account_keys = transaction.message.static_account_keys();
+
+            let mut num_vote_instructions = 0;
+
+            // 循环遍历交易指令
+            for instruction in transaction.message.instructions() {
+                // 要确定指令中使用了哪个程序，我们使用 instruction.program_id_index 索引来 account_keys 获取程序 ID
+                let program_id_index = instruction.program_id_index;
+                let program_id = account_keys[usize::from(program_id_index)];
+
+                // 使用 solana_sdk 的投票 id 与投票程序 id 进行比较
+                if program_id == solana_sdk::vote::program::id() {
+                    num_vote_instructions += 1;
+                    println!("Found vote instruction");
+                } else {
+                    println!("non-vote instruction");
+                }
+            }
+
+            // 检查投票指令的数量是否与总指令数量相同。如果不是的话则是用户交易
+            if num_vote_instructions == transaction.message.instructions().len() {
+                println!("It's a vote transaction");
+            } else {
+                println!("it's a user transaction");
+                user_transactions_count += 1;
+            }
+        }
+
+        // 确定了投票交易总数，方法是从交易总数中减去用户交易总数
+        // 使用 checked_sub 来防止溢出
+        let vote_transactions_count = block
+            .transactions
+            .len()
+            .checked_sub(user_transactions_count as usize)
+            .expect("underflow");
+
+        println!("solana total txs: {}", block.transactions.len());
+        println!("solana user txs: {}", user_transactions_count);
+        println!("solana vote txs: {}", vote_transactions_count);
+
+        // 返回用户交易的数量
+        Ok(user_transactions_count)
+    }
+
+
+    /// # Description
+    ///     计算 Solana 网络的每秒交易量（TPS）
+    /// # Params
+    ///     oldest_timestamp: i64 - 最早的区块时间戳（秒）
+    ///     newest_timestamp: i64 - 最新的区块时间戳（秒）
+    ///     transactions_count: u64 - 在时间范围内的总交易数量
+    /// # Return
+    ///     Result<u64, Report>: 成功时返回Ok(u64)即用户交易数量，失败时返回错误信息。
+    pub async fn calculate_tps(oldest_timestamp: i64, newest_timestamp: i64, transactions_count: u64) -> Result<f64, Report> {
+        // 最新时间戳 - 最旧的时间戳 = 已经过去的秒数
+        // 计算时间差（秒），使用 saturating_sub 以避免溢出
+        let total_seconds_diff = newest_timestamp.saturating_sub(oldest_timestamp);
+
+        // 交易计数 / 已经过去的秒数 = 每秒交易量（TPS）
+        let mut transactions_per_second = transactions_count as f64 / total_seconds_diff as f64;
+
+        // 如果结果为 NaN 或无穷大，将其设置为 0.0
+        if transactions_per_second.is_nan() || transactions_per_second.is_infinite() {
+            transactions_per_second = 0.0;
+        }
+
+        // 返回计算的 TPS 值
+        Ok(transactions_per_second)
+    }
+
+
+    /// # Description
+    ///     计算在指定时间范围内 Solana 网络的平均每秒交易量（TPS）
+    /// # Params
+    ///     client: &RpcClient - RPC 客户端实例
+    ///     threshold_seconds: i64 - 计算TPS的时间窗口（秒）
+    /// # Return
+    ///     Result<(), Report>: 成功时返回 `Ok(())`，失败时返回错误信息
+    pub async fn calculate_for_range(client: &RpcClient, threshold_seconds: i64) -> Result<(), Report> {
+        // 记录计算开始时间
+        let calculation_start = Utc::now();
+
+        // 获取当前区块号（slot）
+        let latest_block_number = client.get_slot().await?;
+
+        // 获取当前区块的信息
+        let mut current_block = Self::get_block(&client, latest_block_number).await?;
+
+        // 从当前区块获取最新的时间戳
+        let newest_timestamp = current_block.block_time.unwrap();
+
+        // 计算时间戳阈值，确定最早应该查询的时间（最新时间 - 阈值秒数 = 时间戳阈值）
+        let timestamp_threshold = newest_timestamp.checked_sub(threshold_seconds).unwrap();
+
+        // 统计总交易量，用来跟踪用户交易的总数
+        let mut total_transactions_count: u64 = 0;
+
+        // 循环获取之前的区块信息，直到达到时间戳阈值
+        let oldest_timestamp = loop {
+            // 获取上一个区块数
+            let prev_block_number = current_block.parent_slot;
+
+            // 获取上一个区块的信息
+            let prev_block = Self::get_block(client, prev_block_number).await?;
+
+            // 统计当前区块的用户交易量
+            let transactions_count = WalletApplication::count_user_transactions(&current_block).await?;
+
+            // 格式化当前区块的时间并输出
+            let naive_datetime = NaiveDateTime::from_timestamp(current_block.block_time.unwrap(), 0);
+            let utc_dt: DateTime<Utc> = DateTime::from_utc(naive_datetime, Utc);
+            println!("Block time: {}", utc_dt.format("%Y-%m-%d %H:%M:%S"));
+
+            // 累加用户交易量
+            total_transactions_count = total_transactions_count.checked_add(transactions_count).expect("overflow");
+
+            // 检查是否已达到时间戳阈值，如果条件为真，将跳出循环并返回前一个块的时间戳
+            let prev_block_timestamp = prev_block.block_time.unwrap();
+            if prev_block_timestamp <= timestamp_threshold {
+                break prev_block_timestamp;
+            }
+
+            // 检查是否已到达链中的第一个块，如果条件为真，将跳出循环并返回前一个块的时间戳
+            if prev_block.block_height.unwrap() == 0 {
+                break prev_block_timestamp;
+            }
+
+            // 更新当前区块为前一个区块，继续循环
+            current_block = prev_block;
+        };
+
+        // 计算并输出每秒交易量（TPS）
+        let transactions_per_second = Self::calculate_tps(oldest_timestamp, newest_timestamp, total_transactions_count).await?;
+
+        // 记录计算结束时间并计算耗时
+        let calculation_end = Utc::now();
+        let duration = calculation_end.signed_duration_since(calculation_start).to_std()?;
+
+        println!("calculation took: {} seconds", duration.as_secs());
+        println!("total transactions per second over period: {}", transactions_per_second);
 
         Ok(())
     }
