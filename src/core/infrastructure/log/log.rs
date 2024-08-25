@@ -2,7 +2,6 @@ use std::sync::Arc;
 use color_eyre::eyre::Result;
 use color_eyre::Report;
 use time::{UtcOffset, macros::format_description};
-use tklog::{LEVEL, Format, LOG};
 use tracing::Level;
 use tracing_appender::{rolling::{RollingFileAppender, Rotation}, non_blocking::WorkerGuard};
 use tracing_subscriber::{fmt::{format::FmtSpan, time::OffsetTime}, layer::SubscriberExt, fmt, Layer, EnvFilter, Registry};
@@ -13,6 +12,7 @@ use crate::core::infrastructure::config::Config;
 /// # Param
 ///     log_guard WorkerGuard: 日志守护
 ///     sql_guard WorkerGuard: 日志守护
+#[allow(dead_code)]
 pub struct Log {
     log_guard: WorkerGuard,
     sql_guard: WorkerGuard,
@@ -132,37 +132,37 @@ impl Log {
     }
 
 
-    /// # Description
-    ///     tklog 日志方法
-    /// # Param
-    ///     settings Arc<Mutex<Config>>: config 配置
-    /// # Return
-    ///     Result<(), Report>
-    ///         - (): None
-    ///         - Report: 错误报告
-    async fn tklog_log(config: Arc<Config>) -> Result<(), Report> {
-        // 读取数据
-        let log_config = &config.log;
-
-        // 从配置文件中获取日志级别
-        let log_level = match log_config.level.as_str() {
-            "trace" => LEVEL::Trace,
-            "debug" => LEVEL::Debug,
-            "info" => LEVEL::Info,
-            "warn" => LEVEL::Warn,
-            "error" => LEVEL::Error,
-            "fatal" => LEVEL::Fatal,
-            "off" => LEVEL::Off,
-            _ => LEVEL::Debug, // 默认日志级别
-        };
-
-        let _log = LOG.set_console(true)  // 设置控制台日志
-            .set_level(log_level)  // 日志级别，默认Debug
-            .set_format(Format::LevelFlag | Format::Time | Format::ShortFileName)  // 结构化日志，定义输出的日志信息
-            .set_cutmode_by_size(&log_config.filename, 1<<20, 10, true)  // 日志文件切割模式为文件大小，每1M文件切分一次，保留10个备份日志文件，并压缩备份日志
-            .set_formatter("{level}{time} {file}:{message}");  // 自定义日志输出格式。默认：{level}{time} {file}:{message}
-
-        Ok(())
-    }
+    // /// # Description
+    // ///     tklog 日志方法
+    // /// # Param
+    // ///     settings Arc<Mutex<Config>>: config 配置
+    // /// # Return
+    // ///     Result<(), Report>
+    // ///         - (): None
+    // ///         - Report: 错误报告
+    // async fn tklog_log(config: Arc<Config>) -> Result<(), Report> {
+    //     // 读取数据
+    //     let log_config = &config.log;
+    //
+    //     // 从配置文件中获取日志级别
+    //     let log_level = match log_config.level.as_str() {
+    //         "trace" => LEVEL::Trace,
+    //         "debug" => LEVEL::Debug,
+    //         "info" => LEVEL::Info,
+    //         "warn" => LEVEL::Warn,
+    //         "error" => LEVEL::Error,
+    //         "fatal" => LEVEL::Fatal,
+    //         "off" => LEVEL::Off,
+    //         _ => LEVEL::Debug, // 默认日志级别
+    //     };
+    //
+    //     let _log = LOG.set_console(true)  // 设置控制台日志
+    //         .set_level(log_level)  // 日志级别，默认Debug
+    //         .set_format(Format::LevelFlag | Format::Time | Format::ShortFileName)  // 结构化日志，定义输出的日志信息
+    //         .set_cutmode_by_size(&log_config.filename, 1<<20, 10, true)  // 日志文件切割模式为文件大小，每1M文件切分一次，保留10个备份日志文件，并压缩备份日志
+    //         .set_formatter("{level}{time} {file}:{message}");  // 自定义日志输出格式。默认：{level}{time} {file}:{message}
+    //
+    //     Ok(())
+    // }
 }
 

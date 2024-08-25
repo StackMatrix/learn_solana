@@ -3,6 +3,7 @@ use sea_orm_migration::prelude::*;
 use sea_orm::DeriveIden;
 
 #[derive(DeriveIden)]
+#[allow(dead_code)]
 enum User {
     Table,
     Id,
@@ -21,6 +22,7 @@ enum User {
 }
 
 #[derive(DeriveIden)]
+#[allow(dead_code)]
 enum Role {
     Table,
     Id,
@@ -32,6 +34,7 @@ enum Role {
 }
 
 #[derive(DeriveIden)]
+#[allow(dead_code)]
 enum Wallet {
     Table,
     Id,

@@ -16,6 +16,7 @@ use config::{Config as Conf, File};
 ///     pub queue: QueueConfig, 消息队列配置
 ///     pub smtp: SmtpConfig, SMTP 邮件配置
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct Config {
     pub app: AppConfig,
     pub log: LogConfig,
@@ -36,6 +37,7 @@ pub struct Config {
 ///     pub app_name: String, 程序名称
 ///     pub ip_addr: String, 程序运行 IP 地址
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct AppConfig {
     pub env: String,
     pub port: u16,
@@ -55,6 +57,7 @@ pub struct AppConfig {
 ///     pub max_age: u32,
 ///     pub compress: bool,
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct LogConfig {
     pub level: String,
     pub root_dir: String,
@@ -65,20 +68,8 @@ pub struct LogConfig {
     pub compress: bool,
 }
 
-impl LogConfig {
-    pub fn to_tracing_level(&self) -> tracing::Level {
-        match self.level.as_str() {
-            "error" => tracing::Level::ERROR,
-            "warn" => tracing::Level::WARN,
-            "info" => tracing::Level::INFO,
-            "debug" => tracing::Level::DEBUG,
-            "trace" => tracing::Level::TRACE,
-            _ => tracing::Level::DEBUG, // 默认日志级别
-        }
-    }
-}
-
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct PersistenceConfig {
     pub driver: String,
     pub db_level: String,
@@ -87,6 +78,7 @@ pub struct PersistenceConfig {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct MySQLConfig {
     pub host: String,
     pub port: u16,
@@ -102,6 +94,7 @@ pub struct MySQLConfig {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct PostgresSQLConfig {
     pub host: String,
     pub port: u16,
@@ -126,6 +119,7 @@ pub struct PostgresSQLConfig {
 ///     jwt_blacklist_grace_period: u64, 黑名单宽限期（秒）
 ///     refresh_grace_period: u64, 刷新令牌宽限期（秒）
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct JwtConfig {
     pub secret: String,
     pub jwt_ttl: u64,
@@ -134,6 +128,7 @@ pub struct JwtConfig {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct RedisConfig {
     pub host: String,
     pub port: u16,
@@ -142,12 +137,14 @@ pub struct RedisConfig {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct StorageConfig {
     pub default: String,
     pub disks: DisksConfig,
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct DisksConfig {
     pub local: LocalDiskConfig,
     pub ali_oss: OssConfig,
@@ -155,12 +152,14 @@ pub struct DisksConfig {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct LocalDiskConfig {
     pub root_dir: String,
     pub app_url: String,
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct OssConfig {
     pub access_key_id: String,
     pub access_key_secret: String,
@@ -171,6 +170,7 @@ pub struct OssConfig {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct QiniuConfig {
     pub access_key: String,
     pub secret_key: String,
@@ -181,11 +181,13 @@ pub struct QiniuConfig {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct QueueConfig {
     pub rabbitmq: RabbitmqConfig,
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct RabbitmqConfig {
     pub uri: String,
     pub exchange_name: String,
@@ -193,11 +195,13 @@ pub struct RabbitmqConfig {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct SmtpConfig {
     pub net_ease_163: SmtpDetails,
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct SmtpDetails {
     pub host: String,
     pub port: u16,

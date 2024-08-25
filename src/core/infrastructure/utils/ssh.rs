@@ -5,6 +5,7 @@ use ssh2::Session;
 /// @Description ssh 管理
 ///
 /// @Param nodes 节点列表
+#[allow(dead_code)]
 pub struct SSHManager {
     pub nodes: Vec<Node>
 }
@@ -20,6 +21,7 @@ pub struct SSHManager {
 /// @Param password 密码
 ///
 /// @Param group 分组
+#[allow(dead_code)]
 pub struct Node {
     pub ip_addr: IpAddr,
     pub port: i64,

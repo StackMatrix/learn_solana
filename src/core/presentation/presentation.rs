@@ -2,9 +2,9 @@ use std::sync::Arc;
 use crate::core::application::ApplicationLayer;
 use crate::core::domain::DomainLayer;
 use crate::core::infrastructure::InfrastructureLayer;
-use crate::core::presentation::handler::Handler;
 use crate::core::presentation::router::Router;
 
+#[allow(dead_code)]
 pub struct PresentationLayer {
     // pub handler: Arc<Handler>,
     pub domain_layer: Arc<DomainLayer>,

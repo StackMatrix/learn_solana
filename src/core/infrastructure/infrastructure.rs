@@ -18,6 +18,7 @@ use crate::core::infrastructure::{
 ///     pub persistence: Arc<Persistence>, 持久化实例
 ///     pub webserver: Arc<WebServer>, WebServer 实例
 ///     pub jwt: Arc<Jwt>, Jwt 实例
+#[allow(dead_code)]
 pub struct InfrastructureLayer {
     pub config: Arc<Config>,
     pub log: Arc<Log>,

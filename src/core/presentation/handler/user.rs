@@ -1,16 +1,16 @@
 use std::sync::Arc;
-use axum::http::StatusCode;
-use axum::{async_trait, Json, extract::{Extension, State}, debug_handler};
-use axum::response::IntoResponse;
-use serde_json::json;
+use axum::{Json, extract::State, response::IntoResponse};
 use tracing::info;
-use tracing_subscriber::fmt::format;
+use crate::core::presentation::{
+    api::{
+        request::{
+            user::{RegisterRequest, LoginRequest}
+        },
+        response::Response, error::ErrorCode
+    }
+};
 use crate::core::application::ApplicationLayer;
-use crate::core::domain::DomainLayer;
-use crate::core::domain::user::UserDomain;
-use crate::core::infrastructure::InfrastructureLayer;
-use crate::core::presentation::{api::{user::RegisterRequest, response::Response}, router::Router};
-use crate::core::presentation::api::error::ErrorCode;
+use crate::core::infrastructure::jwt::TokenOutPut;
 
 /// # Description
 ///     用户任务处理
@@ -21,33 +21,21 @@ impl UserHandle {
     ///     用户注册
     /// # Param
     ///     State(application_layer): State<Arc<ApplicationLayer>> - 应用层
+    ///     Json(payload): Json<RegisterRequest> - 请求 payload
     /// # Return
     ///     impl IntoResponse: 路由
     pub async fn register(
         State(application_layer): State<Arc<ApplicationLayer>>,
         Json(payload): Json<RegisterRequest>,
     ) -> impl IntoResponse {
-        let result = application_layer
-            .user_application
-            .register_user(payload.identifier, payload.password).await;
-
-        info!("Presentation + [Router] Register handle");
-
-
-
         // 根据结果返回响应
-        // match result {
-        //     Ok(_) => (StatusCode::OK, Response::success(None)),
-        //     Err(e) => (StatusCode::BAD_REQUEST, Response::failed(ErrorCode::DefaultError, "!23".to_string()))
-        // }
-
-        // match result {
-        //     Ok(_) => json!({"status": "ok"}),
-        //     Err(_) => json!({"status": "err"}),
-        // }
-
-        Response::<String>::success(Some("".to_string()))
-        // Response::<()>::failed(ErrorCode::DefaultError, "".to_string())
+        match application_layer
+            .user_application
+            .register_user(payload.identifier, payload.password)
+            .await {
+                Ok(_) => Response::<String>::success(Some("".to_string())),
+                Err(e) => Response::<()>::failed(ErrorCode::DefaultError, e.to_string())
+        }
     }
 
 
@@ -59,9 +47,16 @@ impl UserHandle {
     ///     Router: 路由
     pub async fn login(
         State(application_layer): State<Arc<ApplicationLayer>>,
-        Json(payload): Json<RegisterRequest>,
-    ) {
-        info!("+ [Router] Login handle");
+        Json(payload): Json<LoginRequest>,
+    ) -> impl IntoResponse {
+        // 根据结果返回响应
+        match application_layer
+            .user_application
+            .login_user(payload.identifier, payload.password)
+            .await {
+                Ok(value) => Response::<TokenOutPut>::success(Some(value)),
+                Err(e) => Response::<()>::failed(ErrorCode::DefaultError, e.to_string())
+            }
     }
 
     /// # Description

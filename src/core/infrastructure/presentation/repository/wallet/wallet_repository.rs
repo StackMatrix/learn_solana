@@ -3,7 +3,6 @@ use sea_orm::entity::prelude::*;
 use async_trait::async_trait;
 use std::sync::Arc;
 use color_eyre::{Report, Result};
-use log::info;
 use crate::core::domain::wallet::entity::{ActiveModel as WalletActiveModel, Entity as WalletEntity, Model as WalletModel};
 use crate::core::domain::wallet::repository::WalletRepositoryInterface;
 
@@ -56,10 +55,8 @@ impl WalletRepositoryInterface for WalletRepository {
         // 显式地指定 ActiveModel 类型
         let wallet_model: WalletActiveModel = wallet.into();
 
-        // 保存钱包数据
-        let a = wallet_model.save(self.db.as_ref()).await?;
-
-        info!("wallet_model {}" ,format!("{:?}", a));
+        // 保存用户数据
+        wallet_model.save(self.db.as_ref()).await?;
 
         Ok(())
     }

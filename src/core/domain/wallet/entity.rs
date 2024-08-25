@@ -1,6 +1,5 @@
 use chrono::{DateTime, Utc};
-use color_eyre::Report;
-use sea_orm::{ActiveModelBehavior, DeriveEntityModel, DerivePrimaryKey, DeriveRelation, EnumIter, PrimaryKeyTrait};
+use sea_orm::{ActiveModelBehavior, ActiveValue, DeriveEntityModel, DerivePrimaryKey, DeriveRelation, EnumIter, PrimaryKeyTrait};
 use sea_orm::prelude::DateTimeUtc;
 use serde::{Deserialize, Serialize};
 
@@ -11,20 +10,20 @@ use serde::{Deserialize, Serialize};
 ///     TestNet: https://api.testnet.solana.com 测试网
 ///     MainNet: http://api.mainnet-beta.solana.com 主网
 ///     CustomPpc: 自定义 RPC
-pub enum Address {
+pub enum WalletAddress {
     DevNet,
     TestNet,
     MainNet,
     CustomPpc
 }
 
-impl From<Address> for String {
-    fn from(platform: Address) -> Self {
+impl From<WalletAddress> for String {
+    fn from(platform: WalletAddress) -> Self {
         match platform {
-            Address::DevNet => "https://api.devnet.solana.com".into(),
-            Address::TestNet => "https://api.testnet.solana.com".into(),
-            Address::MainNet => "http://api.mainnet-beta.solana.com".into(),
-            Address::CustomPpc => platform.into(),
+            WalletAddress::DevNet => "https://api.devnet.solana.com".into(),
+            WalletAddress::TestNet => "https://api.testnet.solana.com".into(),
+            WalletAddress::MainNet => "http://api.mainnet-beta.solana.com".into(),
+            WalletAddress::CustomPpc => platform.into(),
         }
     }
 }
@@ -46,7 +45,7 @@ impl From<Address> for String {
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
-    pub user_id: i8,
+    pub user_id: i32,
     pub pub_key: Option<String>,
     pub privy_key: Option<String>,
     pub balance: f64,
@@ -60,12 +59,30 @@ impl Model {
     /// # Description
     ///     创建新的钱包实体
     /// # Param
-    ///     None
+    ///     user_id: u32 - 用户id
+    ///     pub_key: String - 钱包公钥
+    ///     privy_key: String - 钱包私钥
     /// # Return
-    ///     Result<(), Report>
-    pub fn new() -> Result<(), Report>{
+    ///     ActiveModel
+    pub fn new(
+        user_id: i32,
+        pub_key: String,
+        privy_key: String,
+    ) -> ActiveModel {
+        // 设置当前时间
+        let now_datetime = Utc::now();
 
-        Ok(())
+        ActiveModel {
+            id: ActiveValue::NotSet,
+            user_id: ActiveValue::set(user_id),
+            pub_key: ActiveValue::set(Some(pub_key)),
+            privy_key: ActiveValue::set(Some(privy_key)),
+            balance: ActiveValue::set(0.0),
+            disable: ActiveValue::set(false),
+            created_at: ActiveValue::set(now_datetime),
+            updated_at: ActiveValue::set(now_datetime),
+            deleted_at: Default::default(),
+        }
     }
 
     /// # Description

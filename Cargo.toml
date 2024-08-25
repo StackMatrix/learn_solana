@@ -28,27 +28,38 @@ tracing-appender = "0.2.1" # tracing 日志文件
 tracing-subscriber = {version = "0.3.18", features = ["env-filter", "time", "local-time", "json"] } # tracing 收集日志
 
 # == solana ==
-solana-program = "2.0.5" # solana 程序
-solana-client = "2.0.5" # solana 客户端
+solana-program = "2.0.7" # solana 程序
+solana-client = "2.0.7" # 用于连接到 Solana RPC 服务器的客户端
+solana-sdk = "2.0.7" # 使用 Solana SDK Crate 用 Rust 编写客户端应用程序
+tiny-bip39 = "1.0.0" # BIP-39 比特币助记码库。Tiny-bip39 是 bip39 板条箱的一个分支，修复了 v0.6。BIP-0039 的 Rust 实现
+
 
 # == 其他 ==
 ssh2 = "0.9.1" # ssh 连接管理
 log = "0.4.22" # 日志记录
 time = "0.3.36" # 时间库
 bcrypt = "0.15.1" # 加密库
-chrono = "0.4.38" # 日期时钟库
+chrono = "0.4.38" # 日期和时间库
 sysinfo = {  version = "0.28.3", default-features = false, features = ["default"] } # 系统信息的库
 rand = "0.8.5"  # 生成随机数的库
 jsonwebtoken = "9.3.0"
 uuid = "1.10.0" # jwt库
+watch = "0.2.3"
+base64 = "0.21.7"
 
 
 # 修补几个crates为solana
-[patch.crates-io.aes-gcm-siv]
-git = "https://github.com/RustCrypto/AEADs" # 带关联数据的认证加密 (AEAD) 算法
-rev = "6105d7a5591aefa646a95d12b5e8d3f55a9214ef"
+#[patch.crates-io.aes-gcm-siv]
+#git = "https://github.com/RustCrypto/AEADs" # 带关联数据的认证加密 (AEAD) 算法
+#rev = "6105d7a5591aefa646a95d12b5e8d3f55a9214ef"
 
 # 修补几个crates为solana
 [patch.crates-io.curve25519-dalek]
 git = "https://github.com/solana-labs/curve25519-dalek.git" # Dalek 椭圆曲线密码学
 rev = "c14774464c4d38de553c6ef2f48a10982c1b4801"
+
+# 编译加速
+# 需要先 cargo install sccache
+# 运行监视 watch -n 1 sccache -s
+#rustc-wrapper = "/opt/homebrew/bin/sccache"
+

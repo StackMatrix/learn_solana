@@ -45,10 +45,10 @@ impl Model {
     /// # Description
     ///     创建一个新用户
     /// # Param
-    ///     account: String 系统生成的账号
-    ///     email: String 用户输入的邮箱
-    ///     mobile: String 用户输入的电话
-    ///     password: String 加密后的密码
+    ///     account: String - 系统生成的账号
+    ///     email: String - 用户输入的邮箱
+    ///     mobile: String - 用户输入的电话
+    ///     password: String - 加密后的密码
     /// # Return
     ///     bool: 是否验证通过
     pub fn new(

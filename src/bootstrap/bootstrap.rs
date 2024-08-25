@@ -16,6 +16,7 @@ use crate::core::presentation::PresentationLayer;
 ///     infrastructure_layer Arc<InfrastructureLayer> - 基础设施层
 ///     application_layer: Arc<ApplicationLayer> - 基础设施层
 ///     interface_layer: Arc<InterfaceLayer> - 接口层
+#[allow(dead_code)]
 pub struct Bootstrap {
     pub infrastructure_layer: Arc<InfrastructureLayer>,
     pub domain_layer: Arc<DomainLayer>,
@@ -38,7 +39,7 @@ impl Bootstrap {
         info!("+Bootstrap [InfrastructureLayer] Load complete.");
 
         // 引导领域层的启动
-        let domain_layer = Arc::new(DomainLayer::new(infrastructure_layer.clone()).await);
+        let domain_layer = Arc::new(DomainLayer::new().await);
         info!("+Bootstrap [DomainLayer] Load complete.");
 
         // 引导应用层的启动

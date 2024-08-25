@@ -1,12 +1,8 @@
 use axum::{
-    Router,
-    http::{StatusCode},
-    routing::get,
     response::Response,
-    middleware::{self, Next},
+    middleware::{Next},
     extract::Request,
 };
-use axum::response::IntoResponse;
 use tracing::info;
 
 /// # Description

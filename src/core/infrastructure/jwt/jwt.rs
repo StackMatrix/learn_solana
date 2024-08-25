@@ -14,7 +14,8 @@ pub struct Jwt {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct CustomClaims {
+#[allow(dead_code)]
+pub struct CustomClaims {
     exp: usize,
     iat: usize,
     iss: String,

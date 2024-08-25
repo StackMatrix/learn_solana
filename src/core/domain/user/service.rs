@@ -1,36 +1,24 @@
-use std::sync::Arc;
 use color_eyre::{Report, Result};
-use crate::core::infrastructure::InfrastructureLayer;
 use crate::core::domain::user::{
     entity::user_entity::{ActiveModel as UserActiveModel, Model as UserModel},
-    repository_interface::UserRepositoryInterface,
 };
 
 /// # Description
 ///     用户领域服务，处理与用户相关的应用逻辑
-/// # Fields
-///     pub repository_interface: Arc<dyn UserRepositoryInterface> - 用户仓库接口
-pub struct UserDomainService {
-    // pub repository_interface: Arc<dyn UserRepositoryInterface>,
-}
+pub struct UserDomainService {}
 
 impl UserDomainService {
     /// # Description
     ///     创建新的用户服务
-    /// # Param
-    ///     infrastructure_layer: Arc<InfrastructureLayer> - 基础设施层
     /// # Return
     ///     UserService: 用户服务实例
-    pub async fn new(infrastructure_layer: Arc<InfrastructureLayer>) -> Self {
-        // let repository_interface = infrastructure_layer.persistence.repository.user_repository.clone();
-        Self {
-            // repository_interface
-        }
+    pub async fn new() -> Self {
+        Self {}
     }
 
 
     /// # Description
-    ///     创建用户,可以是手机号或者是邮箱号
+    ///     创建用户实体,可以是手机号或者是邮箱号
     /// # Param
     ///     email: String - 手机号
     ///     mobile: String - 邮箱号
@@ -38,16 +26,13 @@ impl UserDomainService {
     ///     gen_account: String - 生成的唯一账号
     /// # Return
     ///     Result<UserActiveModel, Report>: 成功返回用户实例，失败返回错误信息
-    pub fn create_user(&self, email: String, mobile: String, password: String, account: String) -> Result<UserActiveModel, Report> {
-        // 创建用户实体
-        let new_user = UserModel::new(
+    pub fn create_user(&self, email: String, mobile: String, password: String, account: String) -> UserActiveModel {
+        UserModel::new(
             account,
             email,
             mobile,
             password,
-        );
-
-        Ok(new_user)
+        )
     }
 
 

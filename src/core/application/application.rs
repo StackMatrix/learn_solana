@@ -1,15 +1,18 @@
 use std::sync::Arc;
 use crate::core::application::user::UserApplication;
+use crate::core::application::wallet::WalletApplication;
 use crate::core::domain::DomainLayer;
 use crate::core::infrastructure::InfrastructureLayer;
 
 /// # Description
 ///     应用层，管理应用逻辑的核心组件
 /// # Fields
-///     jwt_config Arc<JwtService>: Arc<JwtService> 的实例，用于提供必要的服务
+///     user_application: Arc<UserApplication> - 用户应用
+///     wallet_application: Arc<WalletApplication>, - 用户应用
 pub struct ApplicationLayer {
     // pub jwt_service: Arc<JwtService>,
     pub user_application: Arc<UserApplication>,
+    pub wallet_application: Arc<WalletApplication>,
 }
 
 impl ApplicationLayer {
@@ -26,9 +29,15 @@ impl ApplicationLayer {
         // 初始化 user 应用
         let user_application = Arc::new(UserApplication::new(infrastructure_layer.clone(), domain_layer.clone()));
 
+        // 初始化 wallet 应用
+        let wallet_application = Arc::new(WalletApplication::new(infrastructure_layer.clone(), domain_layer.clone()));
+
+
+
         Self {
             // jwt_service,
-            user_application
+            user_application,
+            wallet_application
         }
     }
 }

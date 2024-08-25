@@ -1,6 +1,5 @@
 
 use std::{net::SocketAddr, sync::Arc};
-use axum::handler::Handler;
 use tracing::{info, Level};
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use color_eyre::eyre::{Result, Report};
@@ -74,7 +73,7 @@ impl WebServer {
         tokio::spawn(async move {
             axum::serve(listener, app_router_log)
                 .with_graceful_shutdown(async move { notify_shutdown.notified().await })
-                .await.map_err(|e| Report::msg("+InfrastructureLayer [WebServer] WebServer run failed."))
+                .await.map_err(|e| Report::msg(format!("+InfrastructureLayer [WebServer] WebServer run failed: {:?}" ,e.to_string())))
         });
 
         Ok(())

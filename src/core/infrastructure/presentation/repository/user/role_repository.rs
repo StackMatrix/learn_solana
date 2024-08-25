@@ -1,7 +1,7 @@
 use sea_orm::{DatabaseConnection};
-use sea_orm::entity::prelude::*;
 use std::sync::Arc;
 
+#[allow(dead_code)]
 pub struct RoleRepository {
     db: Arc<DatabaseConnection>,
 }

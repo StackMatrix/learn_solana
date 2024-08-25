@@ -1,24 +1,21 @@
 use std::sync::Arc;
-use axum::{routing::get, Router as R, middleware, async_trait, debug_handler};
-use color_eyre::Report;
+use axum::{routing::get, Router as R};
 use tracing::info;
 use crate::core::presentation::handler::user::UserHandle;
 use axum::{
-    http::{StatusCode},
     response::Response,
     middleware::{Next},
-    extract::{Request, Extension},
+    extract::Request,
 };
-use axum::extract::State;
-use axum::response::IntoResponse;
-use axum::routing::{any, post};
+use axum::routing::post;
 use crate::core::application::ApplicationLayer;
 use crate::core::domain::DomainLayer;
 use crate::core::infrastructure::InfrastructureLayer;
-use crate::core::presentation::handler::Handler;
+use crate::core::presentation::handler::wallet::WalletHandle;
 
 /// # Description
 ///     【WebServer】路由接口
+#[allow(dead_code)]
 pub struct Router {
     pub infrastructure_layer: Arc<InfrastructureLayer>,
     pub domain_layer: Arc<DomainLayer>,
@@ -46,7 +43,12 @@ impl Router {
     ///     Router: 路由
     pub async fn v1_routes(&self) -> R {
         R::new()
-            .nest("/v1", R::new().nest("/userManagement", self.user_management().await))
+            .nest(
+                "/v1",
+                R::new()
+                    .nest("/userManagement", self.user_management().await)
+                    .nest("/walletManagement", self.wallet_management().await)
+            )
 
     }
 
@@ -58,8 +60,22 @@ impl Router {
     ///     Router: 路由
     async fn user_management(&self) -> R {
         R::new()
-            .route("/register", get(UserHandle::register))
-            .route("/login", get(UserHandle::login))
+            .route("/register", post(UserHandle::register))
+            .route("/login", post(UserHandle::login))
+            .with_state(self.application_layer.clone())
+
+    }
+
+    /// # Description
+    ///     钱包管理路由组
+    /// # Param
+    ///     None
+    /// # Return
+    ///     Router: 路由
+    async fn wallet_management(&self) -> R {
+        R::new()
+            .route("/generation_wallet", get(WalletHandle::generation_wallet))
+            // .route("/query_wallet_amount", get(WalletHandle::))
             .with_state(self.application_layer.clone())
 
     }

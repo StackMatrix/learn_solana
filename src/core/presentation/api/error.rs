@@ -1,4 +1,5 @@
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum ErrorCode {
     DefaultError,        // 默认错误
     ValidateError,       // 验证错误

@@ -1,7 +1,6 @@
 use std::sync::Arc;
 use crate::core::application::ApplicationLayer;
 use crate::core::infrastructure::InfrastructureLayer;
-use crate::core::presentation::handler::user::UserHandle;
 
 #[derive(Clone)]
 pub struct Handler {

@@ -1,22 +1,16 @@
-use std::error::Error;
-use std::io;
 use std::sync::Arc;
 use chrono::{Datelike, Utc};
 use color_eyre::eyre::{Report, Result};
 use rand::{Rng, SeedableRng};
 use rand::rngs::StdRng;
 use tracing::{error, info};
-use crate::core::infrastructure::{jwt::{Jwt, TokenOutPut}, InfrastructureLayer};
+use crate::core::infrastructure::{jwt::TokenOutPut, InfrastructureLayer};
 use crate::core::domain::{
     user::{
-        repository_interface::UserRepositoryInterface,
-        UserDomain,
-        entity::user_entity::Model as UserModel,
-        domain_service::UserDomainService
+        repository_interface::UserRepositoryInterface
     },
     DomainLayer
 };
-use crate::core::infrastructure::presentation::repository::user::user_repository::UserRepository;
 
 /// # Description
 ///     用户应用服务，负责处理用户相关的应用逻辑，如注册、登录、禁用用户和分配角色。
@@ -74,7 +68,7 @@ impl UserApplication {
         };
 
         // 调用领域服务进行用户注册
-        let new_user = self.domain_layer.user_domain.domain_service.create_user(email, mobile, hashed_password, account)?;
+        let new_user = self.domain_layer.user_domain.domain_service.create_user(email, mobile, hashed_password, account);
 
         // 保存用户到仓储
         match self.infrastructure_layer.persistence.repository.user_repository.save(new_user).await {

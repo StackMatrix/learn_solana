@@ -19,6 +19,7 @@ use serde::{Deserialize, Serialize};
 /// 5 process 信息
 /// 6 全部信息
 #[derive(Deserialize)]
+#[allow(dead_code)]
 pub struct SystemInfoResponse {
     pub kind: Option<usize>
 }

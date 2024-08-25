@@ -1,33 +1,27 @@
-use std::sync::Arc;
 use color_eyre::{Report, Result};
-use tracing::{error, info};
-use crate::core::domain::wallet::repository::WalletRepositoryInterface;
-// use std::net::SocketAddr;
-use chrono::Utc;
-use sea_orm::{ActiveValue, IntoActiveModel, NotSet};
-use crate::core::infrastructure::InfrastructureLayer;
-// use solana_client::rpc_client::RpcClient;
-use super::entity::Address;
+use tracing::info;
 use super::entity::{ActiveModel as WalletActiveModel, Model as WalletModel};
 
 /// # Description
 ///     钱包服务
 /// # Fields
 ///     repository: Arc<dyn WalletRepositoryInterface>: 钱包仓储接口的引用
-pub struct WalletService {
-    repository: Arc<dyn WalletRepositoryInterface>,
+pub struct WalletDomainService {
+    // repository: Arc<dyn WalletRepositoryInterface>,
 }
 
-impl WalletService {
+impl WalletDomainService {
     /// # Description
     ///     创建新的钱包服务
     /// # Param
     ///     infrastructure_layer: Arc<InfrastructureLayer>: 基础设施层为领域层提供服务
     /// # Return
     ///     WalletService: 钱包服务实例
-    pub fn new(infrastructure_layer: Arc<InfrastructureLayer>) -> Self {
-        let repository = infrastructure_layer.persistence.repository.wallet_repository.clone();
-        Self { repository }
+    pub fn new() -> Self {
+        // let repository = infrastructure_layer.persistence.repository.wallet_repository.clone();
+        // Self { repository }
+
+        Self {}
     }
 
 
@@ -37,37 +31,12 @@ impl WalletService {
     ///     None
     /// # Return
     ///     WalletService: 钱包服务实例
-    pub async fn generation_wallet(&self) -> Result<(), String> {
-        // let rpc_addr: String = Address::MainNet.into();
-        // let rpc_client = RpcClient::new(rpc_addr);
-
-        let get_now_utc = Utc::now();
-
-        let new_wallet = WalletActiveModel {
-            id: NotSet,
-            user_id: ActiveValue::set(102),  // i8 类型
-            pub_key: ActiveValue::set(Some("公钥".to_owned())),  // Option<String> 类型
-            privy_key: ActiveValue::set(Some("私钥".to_owned())),  // Option<String> 类型
-            balance: ActiveValue::set(1.2),  // f64 类型
-            disable: ActiveValue::set(false),  // bool 类型
-            created_at: ActiveValue::set(get_now_utc),  // DateTimeUtc 类型
-            updated_at: ActiveValue::set(get_now_utc),  // DateTimeUtc 类型
-            deleted_at: Default::default(),  // Option<DateTime<Utc>> 类型
-        };
-
-        // info!("选择网络: {}", format!("选择网络: {:?}", rpc_addr));
-        info!("钱包生成成功: {}", format!("钱包生成成功: {:?}", new_wallet));
-
-        match self.repository.save(new_wallet).await {
-            Ok(_) => {
-                // info!("钱包生成成功: {}", format!("选择网络: {:?}", rpc_addr.clone()));
-                Ok(())
-            }
-            Err(e) => {
-                error!("钱包生成失败: {:?}", e);
-                Err(format!("钱包生成失败: {}", e))
-            },
-        }
+    pub fn generation_wallet(&self, user_id: i32, pub_key: String, privy_key: String) -> WalletActiveModel {
+        WalletModel::new(
+            user_id,
+            pub_key,
+            privy_key,
+        )
     }
 
 
@@ -98,31 +67,22 @@ impl WalletService {
     ///     amount: f64: 要添加的金额
     /// # Return
     ///     Result<(), String>: 处理结果
-    pub async fn deposit(&self, id: u64, amount: f64) -> Result<(), Report> {
-        let mut wallet: Option<WalletModel> = self.repository.find_by_id(id).await?;
-
-        info!("wallet: {:?}", wallet);
-
-        // wallet.unwrap().update_balance(amount).map_err(|e| Report::msg(e))?;
-
-        // 将 WalletModel 转换为 WalletActiveModel
-        let wallet_model =  wallet.unwrap().into_active_model();
-
-        self.repository.save(wallet_model).await?;
+    pub fn deposit(&self, mut wallet: WalletModel, amount: f64) -> Result<(), Report> {
+        wallet.update_balance(amount).map_err(|_e| {Report::msg("更新金额失败")})?;
 
         Ok(())
     }
 
-    /// # Description
-    ///     从钱包中取出金额
-    /// # Param
-    ///     id: u64: 钱包的唯一标识符
-    ///     amount: f64: 要取出的金额
-    /// # Return
-    ///     Result<(), String>: 处理结果
-    pub async fn withdraw(&self, id: u64, amount: f64) -> Result<()> {
-        self.deposit(id, -amount).await?;
-
-        Ok(())
-    }
+    // /// # Description
+    // ///     从钱包中取出金额
+    // /// # Param
+    // ///     id: u64: 钱包的唯一标识符
+    // ///     amount: f64: 要取出的金额
+    // /// # Return
+    // ///     Result<(), String>: 处理结果
+    // pub async fn withdraw(&self, id: u64, amount: f64) -> Result<()> {
+    //     self.deposit(id, -amount).await?;
+    //
+    //     Ok(())
+    // }
 }
