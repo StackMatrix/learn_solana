@@ -1,36 +1,71 @@
-use std::io;
-use std::io::Write;
-use std::str::FromStr;
-use std::sync::Arc;
-use std::time::Duration;
+use std::{
+    io::{self, Write},
+    str::FromStr,
+    sync::Arc,
+    time::Duration,
+};
+use std::collections::BTreeMap;
+use std::error::Error;
+use bincode::deserialize; // 导入 bincode 反序列化函数
+use axum::http;
 use bip39::{Language, Mnemonic, MnemonicType, Seed};
 use chrono::{DateTime, NaiveDateTime, Utc};
 use color_eyre::{Report, Result};
+use reqwest::StatusCode;
 use sea_orm::IntoActiveModel;
+use serde::{Deserialize, Serialize};
+use serum_dex::state::MarketState;
+use tracing::error;
+use spl_token::instruction as token_instruction;
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_client::rpc_config::RpcBlockConfig;
 use solana_client::rpc_response::RpcVersionInfo;
-use tracing::error;
+use spl_token::instruction::{initialize_account, initialize_mint, transfer as spl_transfer};
+use solana_transaction_status::{
+    EncodedConfirmedBlock,
+    UiTransactionEncoding
+};
+use spl_associated_token_account::{
+    create_associated_token_account,
+    get_associated_token_address,
+    processor::process_instruction
+};
+use solana_sdk::{
+    account::from_account,
+    transaction::Transaction,
+    commitment_config::CommitmentConfig,
+    signature::{keypair_from_seed, write_keypair_file, Signer, Keypair}
+};
+use solana_program::{
+    system_instruction::{create_nonce_account, transfer},
+    instruction::{AccountMeta, Instruction},
+    program_error::ProgramError,
+    pubkey::Pubkey,
+    system_program,
+    sysvar,
+    program::invoke,
+    account_info::AccountInfo,
+    native_token::{lamports_to_sol, sol_to_lamports},
+    clock::Clock,
+    system_instruction
+};
+use solana_program::program_pack::Pack;
+use solana_program::pubkey::ParsePubkeyError;
+use solana_sdk::account::Account;
+use solana_sdk::transaction::VersionedTransaction;
+use spl_token_swap::instruction::{SwapInstruction, Swap, swap};
+use spl_token_swap::solana_program::pubkey;
 use crate::core::domain::DomainLayer;
 use crate::core::domain::wallet::repository::WalletRepositoryInterface;
 use crate::core::infrastructure::InfrastructureLayer;
-use solana_program;
-use solana_program::pubkey::Pubkey;
-use solana_program::system_instruction::create_nonce_account;
-use solana_program::{system_instruction, system_program, sysvar};
-use solana_program::clock::Clock;
-use solana_program::native_token::{lamports_to_sol, sol_to_lamports};
-use solana_sdk::account::from_account;
-use solana_sdk::commitment_config::CommitmentConfig;
-use solana_sdk::signature::{keypair_from_seed, write_keypair_file, Keypair, Signer};
-use solana_sdk::transaction::Transaction;
-use solana_transaction_status::{EncodedConfirmedBlock, UiTransactionEncoding};
+
 
 pub struct WalletApplication {
     domain_layer: Arc<DomainLayer>,
     infrastructure_layer: Arc<InfrastructureLayer>
 }
 
+/// Solana 钱包基础功能
 impl WalletApplication {
     /// # Description
     ///     创建新的钱包应用服务实例
@@ -210,7 +245,7 @@ impl WalletApplication {
 
 
     /// # Description
-    ///     获取 Solana 钱包金额
+    ///     获取 Solana 金额
     /// # Params
     ///     address: &str - 钱包地址
     ///     client: &RpcClient - RPC 客户端实例
@@ -228,6 +263,33 @@ impl WalletApplication {
     }
 
 
+
+    /// # Description
+    ///     获取账号信息
+    /// # Params
+    ///     address: &str - 钱包地址
+    ///     client: &RpcClient - RPC 客户端实例
+    /// # Return
+    ///     Result<(), Report>: 成功时返回Ok()，失败时返回错误信息。
+    pub async fn get_account_info(client: &RpcClient, pub_key: &Pubkey) -> Result<Account, Report> {
+        // 获取账号信息
+        let account = client.get_account(&pub_key).await?;
+
+        Ok(account)
+    }
+
+    /// Make a call to the raydium api endpoint to retrieve all liquidity pools.
+    pub async fn get_all_liquidity_pools() -> Result<(), Report> {
+        let response = reqwest::get("https://api.raydium.io/v2/sdk/liquidity/mainnet.json")
+            .await?
+            .json()
+            .await?;
+
+        println!("get_all_liquidity_pools： {:?}", response);
+
+        Ok(())
+    }
+
     /// # Description
     ///     为 Solana 钱包请求空投，只能在测试和开发网络中进行
     /// # Params
@@ -236,7 +298,7 @@ impl WalletApplication {
     ///     client: &RpcClient - RPC 客户端实例
     /// # Return
     ///     Result<(), Report>: 成功时返回Ok()，失败时返回错误信息。
-    pub async fn airdrop_sol(address: &str, sol: f64, client: &RpcClient) -> Result<(), Report>  {
+    pub async fn airdrop_sol(address: &str, sol: f64, client: &solana_client::rpc_client::RpcClient) -> Result<(), Report>  {
         // 将 Sol 值转换为 Lamports
         let lamports = sol_to_lamports(sol);
 
@@ -244,7 +306,7 @@ impl WalletApplication {
         let pub_key = Pubkey::from_str(address)?;
 
         // 为该钱包请求空投，这将发送请求但不会等待确认
-        let signature = client.request_airdrop(&pub_key, lamports).await?;
+        let signature = client.request_airdrop(&pub_key, lamports)?;
 
         // 等待请求空投操作
         let wait_milis = Duration::from_millis(100);
@@ -253,7 +315,7 @@ impl WalletApplication {
 
         // 检查交易是否成功
         loop {
-            if let Ok(confirmed) = client.confirm_transaction(&signature).await {
+            if let Ok(confirmed) = client.confirm_transaction(&signature) {
                 if confirmed {
                     println!("\nAirdrop to {}: {}", address, confirmed);
                     break;
@@ -514,4 +576,815 @@ impl WalletApplication {
 
         Ok(())
     }
+
+
+    /// 创建账户
+    pub async fn create_account(client: &solana_client::rpc_client::RpcClient, fee_payer: &Keypair, new_account: &Keypair, ) -> Result<(), Report> {
+        // Specify account data length
+        let space = 0;
+        // Get minimum balance required to make an account with specified data length rent exempt
+        let rent_exemption_amount = client
+            .get_minimum_balance_for_rent_exemption(space)?;
+
+        // Create instruction to create an account
+        let create_account_ix = system_instruction::create_account(
+            &fee_payer.pubkey(),
+            &new_account.pubkey(),
+            rent_exemption_amount,
+            space as u64,
+            &fee_payer.pubkey(),
+        );
+
+        // Get recent blockhash
+        let recent_blockhash = client.get_latest_blockhash()?;
+        // Create transaction to create an account
+        let create_account_tx = solana_sdk::transaction::Transaction::new_signed_with_payer(
+            &[create_account_ix],
+            Some(&fee_payer.pubkey()),
+            &[&fee_payer, &new_account],
+            recent_blockhash,
+        );
+
+        // Submit a transaction to create an account and wait for confirmation
+        let create_account_tx_signature = client
+            .send_and_confirm_transaction(&create_account_tx)?;
+
+        // Print transaction signature and account address
+        println!("Transaction signature: {create_account_tx_signature}");
+        println!("New account {} created successfully", new_account.pubkey());
+
+        Ok(())
+    }
+
+}
+
+
+
+/// Solana 代币功能
+impl WalletApplication {
+    /// # Description
+    ///     获取 USDT 的市场价格
+    /// # Params
+    ///     client: &RpcClient - RPC 客户端实例
+    ///     buyer_keypair: &Keypair - 买家的密钥对
+    ///     source_account_pubkey: &Pubkey - SOL 来源账户的公钥
+    ///     usdt_mint_pubkey: &Pubkey - USDT 的 Mint 公钥
+    ///     usdt_account_pubkey: &Pubkey - 目标 USDT 账户的公钥
+    ///     pool_swap_pubkey: &Pubkey - 交换池的公钥
+    ///     pool_authority_pubkey: &Pubkey - 交换池的授权公钥
+    ///     pool_token_a_account_pubkey: &Pubkey - 交换池中 SOL 的代币账户公钥
+    ///     pool_token_b_account_pubkey: &Pubkey - 交换池中 USDT 的代币账户公钥
+    ///     sol_amount: u64 - 兑换的 SOL 数量（以 lamports 为单位）
+    /// # Return
+    ///     Result<(), Report>: 成功时返回 Ok()，失败时返回错误信息。
+    pub async fn get_market_price() -> Result<()>  {
+        let url = "https://min-api.cryptocompare.com/data/pricemulti?fsyms=SOL,USD&tsyms=USD,SOL";
+        let response = reqwest::get(url).await?; // 发送 GET 请求
+
+        let parsed = response.json::<serde_json::Value>().await?;
+
+        // 提取 SOL/USD 的汇率
+        if let Some(sol_usd_rate) = parsed["SOL"]["USD"].as_f64() {
+            println!("1 SOL can be exchanged for {} USD", sol_usd_rate);
+        } else {
+            println!("Could not find the exchange rate for SOL/USD");
+        }
+
+        Ok(())
+    }
+
+    pub async fn get_all_token_price() -> Result<()> {
+        let price_info_result: serde_json::Value = reqwest::get("https://api.raydium.io/v2/main/price")
+            .await?
+            .json()
+            .await?;
+
+        println!("{:?}", price_info_result);
+
+        Ok(())
+    }
+
+    pub async fn get_token_price(mints: &str) -> Result<()> {
+        // let url = format!("https://api-v3.raydium.io/mint/price?mints={}", mints);
+        // let price_info_result: serde_json::Value = reqwest::get(url)
+        //     .await?
+        //     .json()
+        //     .await?;
+        //
+        // println!("{:#?}", price_info_result["data"]);
+
+        let client = reqwest::Client::new();
+        let swap_url = format!(
+            "https://api.raydium.io/v2/sdk/swap?inputMint={}&outputMint={}&amount={}&slippage={}",
+            "So11111111111111111111111111111111111111112",  // SOL Mint
+            "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",  // USDT Mint
+            0.1, // 兑换的 SOL 数量
+            1 // 允许的滑点
+        );
+        let response = client.get(&swap_url).send().await?;
+        let swap_response: SwapResponse = serde_json::from_str(&response.text().await?)?;
+
+        Ok(())
+    }
+
+
+    pub async fn transfer_usdt(
+        connection: &RpcClient,
+        buyer_keypair: &Keypair,
+        source_usdt_account: &Pubkey,   // 来源账户（您的 USDT 代币账户）
+        recipient_usdt_account: &Pubkey, // 目标账户（接收 USDT 的账户）
+        usdt_amount: u64,              // 转账数量（USDT的最小单位）
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        // 获取最新的区块哈希
+        let blockhash = connection.get_latest_blockhash().await?;
+
+        // 创建 USDT 转账指令
+        let transfer_instruction = token_instruction::transfer(
+            &spl_token::id(),
+            source_usdt_account,          // 您的 USDT 代币账户
+            recipient_usdt_account,       // 接收 USDT 的代币账户
+            &buyer_keypair.pubkey(),      // 授权签名者
+            &[],                          // 其他签名者（如果有）
+            usdt_amount,                  // 转账数量，按最小单位
+        )?;
+
+        // 创建交易并签名
+        let mut tx = Transaction::new_with_payer(
+            &[transfer_instruction],
+            Some(&buyer_keypair.pubkey()),
+        );
+        tx.sign(&[buyer_keypair], blockhash);
+
+        // 发送并确认代币转账交易
+        let transfer_signature = connection.send_and_confirm_transaction(&tx).await?;
+        println!("USDT transfer confirmed: {}", transfer_signature);
+
+        Ok(())
+    }
+
+    /// # Description
+    ///     通过 solxtence API 进行代币交换
+    /// # Params
+    ///     rpc_url: &str - RPC 节点的 URL
+    ///     buyer_keypair: &Keypair - 买家的密钥对
+    ///     sol_mint_pubkey: &Pubkey - SOL 的 Mint 公钥
+    ///     usdt_mint_pubkey: &Pubkey - USDT 的 Mint 公钥
+    ///     sol_amount: f64 - 兑换的 SOL 数量
+    ///     slip: f64 - 允许的滑点
+    ///     recipient_usdt_account: USDT 代币账户
+    /// # Return
+    ///     Result<(), Box<dyn std::error::Error>> - 成功时返回 Ok()，失败时返回错误信息。
+    pub async fn perform_swap(
+        connection: &RpcClient,
+        buyer_keypair: &Keypair,
+        sol_mint_pubkey: &Pubkey,
+        usdt_mint_pubkey: &Pubkey,
+        sol_amount: f64,
+        slip: f64,
+        recipient_usdt_account: &Pubkey,
+    ) -> Result<(), Box<dyn Error>> {
+        // 定义交易参数
+        let params = vec![
+            ("from", sol_mint_pubkey.to_string()),
+            ("to", usdt_mint_pubkey.to_string()),
+            ("amount", sol_amount.to_string()), // 输入 SOL 的数量
+            ("slip", slip.to_string()),         // 滑点
+            ("payer", buyer_keypair.pubkey().to_string()), // 付款方地址
+            ("fee", "0.00009".to_string()),     // 优先费用
+            ("txType", "v0".to_string()),       // 交易版本
+        ];
+
+        // 使用 Reqwest 发出 GET 请求获取 swap 交易信息
+        let client = reqwest::Client::new();
+        let swap_url = format!(
+            "https://swap.solxtence.com/swap?{}",
+            serde_urlencoded::to_string(&params)?
+        );
+        let response_data = client.get(&swap_url).send().await?.text().await?;
+        println!("response_data. {:#?}", response_data);
+
+        // 解析响应
+        let swap_response: SwapResponse = serde_json::from_str(&*response_data)?;
+        println!("response. {:#?}", swap_response);
+
+        // 获取最新的区块哈希
+        let blockhash = connection.get_latest_blockhash().await?;
+
+        // 定义 transaction 为 VersionedTransaction 类型
+        let mut transaction: VersionedTransaction;
+        // 反序列化交易并签署
+        if swap_response.transaction.tx_type == "v0" {
+            // `v0` 交易使用 `VersionedTransaction`
+            let serialized_tx = &swap_response.transaction.serialized_tx;
+
+            // 解码并反序列化
+            let decoded_tx = base64::decode(serialized_tx)?;  // 将 Base64 解码后的字节存储为 Vec<u8>
+            let mut versioned_transaction: VersionedTransaction = bincode::deserialize(decoded_tx.as_slice())?;  // 使用 bincode 反序列化
+
+            // 设置 recent_blockhash
+            versioned_transaction.message.set_recent_blockhash(blockhash);
+
+            // 签署交易
+            // 使用 `sign` 签署交易, 传递一个包含买家 keypair 的数组
+            let signature = buyer_keypair.try_sign_message(&versioned_transaction.message.serialize()).unwrap();
+            versioned_transaction.signatures = vec![signature];
+
+            // 发送并确认交易
+            let signature_result = connection.send_and_confirm_transaction(&versioned_transaction).await?;
+            println!("Transaction confirmed: {}", signature_result);
+
+            // 向 USDT 账户转账
+            // let transfer_instruction = token_instruction::transfer(
+            //     &spl_token::id(),
+            //     &usdt_mint_pubkey,                      // 来源账户（USDT 池的代币账户）
+            //     recipient_usdt_account,                 // 目标账户（你的 USDT 代币账户）
+            //     &buyer_keypair.pubkey(),                // 授权签名者
+            //     &[],                      // 任何其他签名者
+            //     sol_amount as u64,                      // 转账数量
+            // )?;
+            //
+            // // 创建交易
+            // let mut tx = Transaction::new_with_payer(
+            //     &[transfer_instruction],
+            //     Some(&buyer_keypair.pubkey()),
+            // );
+            // tx.sign(&[buyer_keypair], blockhash);
+            //
+            // // 发送并确认代币转账交易
+            // let transfer_signature = connection.send_and_confirm_transaction(&tx).await?;
+            // println!("Transfer transaction confirmed: {}", transfer_signature);
+        }
+
+        Ok(())
+    }
+
+    pub async fn swap_sol_to_usdt_raydium(
+        client: &RpcClient,
+        buyer_keypair: &Keypair,
+        pool_pubkey: &Pubkey, // Raydium 池的公钥
+        source_account_pubkey: &Pubkey, // 用户 SOL 账户
+        destination_account_pubkey: &Pubkey, // 用户 USDT 账户
+        sol_amount: f64, // 交换的 SOL 数量
+    ) -> Result<()> {
+        // 1. 将 SOL 转换为 lamports
+        let lamports = sol_to_lamports(sol_amount);
+
+        // 2. 获取最新的区块哈希
+        let latest_blockhash = client.get_latest_blockhash().await?;
+
+        // 获取报价
+        let response = reqwest::get("https://api-v3.raydium.io/compute")
+            .await?
+            .json()
+            .await?;
+
+        // 3. 构建 Raydium Swap 指令
+        // 注意：这只是一个示例，你需要根据 Raydium 的智能合约结构构建实际的交换指令。
+        let swap_instruction = Instruction::new_with_bincode(
+            *pool_pubkey,  // 使用 Raydium 交换池的程序 ID
+            &lamports, // 指令数据
+            vec![
+                AccountMeta::new(*source_account_pubkey, true), // 用户的 SOL 账户
+                AccountMeta::new(*destination_account_pubkey, false), // 用户的 USDT 账户
+                // AccountMeta::new_readonly(*pool_pubkey, false), // Raydium 池的账户
+                // 其他必要的账户，比如流动性池中的 tokenA, tokenB 账户等
+            ],
+        );
+
+        // 4. 创建并签署交易
+        let mut transaction = Transaction::new_with_payer(
+            &[swap_instruction],
+            Some(&buyer_keypair.pubkey()),
+        );
+        println!("Transaction: {:?}", transaction);
+
+
+        transaction.sign(&[buyer_keypair], latest_blockhash);
+
+        // 5. 发送交易并等待确认
+        let signature = client.send_and_confirm_transaction(&transaction).await?;
+
+        println!("signature: {:#?}", signature);
+
+        Ok(())
+    }
+
+
+    /// # Description
+    ///     使用 SOL 通过 spl_token_swap 程序交换 USDT
+    /// # Params
+    ///     client: &RpcClient - RPC 客户端实例
+    ///     buyer_keypair: &Keypair - 买家的密钥对
+    ///     source_account_pubkey: &Pubkey - SOL 来源账户的公钥
+    ///     usdt_mint_pubkey: &Pubkey - USDT 的 Mint 公钥
+    ///     usdt_account_pubkey: &Pubkey - 目标 USDT 账户的公钥
+    ///     pool_swap_pubkey: &Pubkey - 交换池的公钥
+    ///     pool_authority_pubkey: &Pubkey - 交换池的授权公钥
+    ///     pool_token_a_account_pubkey: &Pubkey - 交换池中 SOL 的代币账户公钥
+    ///     pool_token_b_account_pubkey: &Pubkey - 交换池中 USDT 的代币账户公钥
+    ///     sol_amount: u64 - 兑换的 SOL 数量（以 lamports 为单位）
+    /// # Return
+    ///     Result<(), Report>: 成功时返回 Ok()，失败时返回错误信息。
+    pub async fn swap_sol_to_usdt(
+        client: &RpcClient,
+        buyer_keypair: &Keypair,
+        source_account_pubkey: &pubkey::Pubkey,
+        usdt_mint_pubkey: &pubkey::Pubkey,
+        usdt_account_pubkey: &pubkey::Pubkey,
+        pool_swap_pubkey: &pubkey::Pubkey,
+        pool_authority_pubkey: &pubkey::Pubkey,
+        pool_token_a_account_pubkey: &pubkey::Pubkey,
+        pool_token_b_account_pubkey: &pubkey::Pubkey,
+        pool_mint_pubkey: &pubkey::Pubkey,
+        pool_fee_pubkey: &pubkey::Pubkey,
+        sol_amount: u64,
+    ) -> Result<()> {
+        // // 1. 获取最新的区块哈希
+        // let latest_blockhash = client.get_latest_blockhash()?;
+        //
+        // // 2. 创建 Swap 指令
+        // let swap_instruction = swap(
+        //     &spl_token_swap::id(), // SPL Token Swap 程序 ID
+        //     &spl_token::id(), // SPL Token 程序 ID
+        //     pool_swap_pubkey, // 交换池的公钥
+        //     pool_authority_pubkey, // 交换池的授权公钥
+        //     &buyer_keypair.pubkey(), // 用户转账授权公钥
+        //     source_account_pubkey, // 用户 SOL 账户的公钥
+        //     pool_token_a_account_pubkey, // 交换池中 SOL 的代币账户公钥
+        //     pool_token_b_account_pubkey, // 交换池中 USDT 的代币账户公钥
+        //     usdt_account_pubkey, // 用户的 USDT 账户的公钥
+        //     pool_mint_pubkey, // 交换池的 Mint 账户公钥
+        //     pool_fee_pubkey, // 费用账户的公钥
+        //     None, // 没有主机费用账户
+        //     Swap {
+        //         amount_in: sol_amount, // 用户输入的 SOL 数量
+        //         minimum_amount_out: 1, // 最小接收的 USDT 数量，防止滑点
+        //     },
+        // )?;
+        //
+        // // 3. 创建并签署交易
+        // let mut transaction = Transaction::new_with_payer(
+        //     &[swap_instruction],
+        //     Some(&buyer_keypair.pubkey()),
+        // );
+        // transaction.sign(&[buyer_keypair], latest_blockhash);
+        //
+        // // 4. 发送交易并等待确认
+        // let signature = client.send_and_confirm_transaction(&transaction)?;
+
+        Ok(())
+    }
+
+
+    /// # Description
+    ///     使用 SOL 购买 USDT
+    /// # Params
+    ///     client: &RpcClient - RPC 客户端实例
+    ///     buyer_keypair: &Keypair - 买家的密钥对
+    ///     source_account_pubkey: &Pubkey - 来源账户的公钥
+    ///     buyer_usdt_account_pubkey: &Pubkey - 目标账户的公钥
+    ///     sol_amount: f64 - 兑换的 USDT 数量
+    /// # Return
+    ///     Result<(), Report>: 成功时返回Ok()，失败时返回错误信息。
+    pub async fn buy_usdt_with_sol(client: &RpcClient, buyer_keypair: &Keypair, source_account_pubkey: &Pubkey, destination_account_pubkey: &Pubkey, sol_amount: f64, ) -> Result<(), Report> {
+        // 1. 将 SOL 转换为 lamports
+        let lamports = sol_to_lamports(sol_amount);
+
+        // 2. 获取最新的区块哈希
+        let latest_blockhash = client.get_latest_blockhash().await?;
+
+        // 3. 生成交易指令，将SOL发送到交换池
+        let swap_instruction = transfer(
+            &buyer_keypair.pubkey(),
+            &Pubkey::from_str("CYbD9RaToYMtWKA7QZyoLahnHdWq553Vm62Lh6qWtuxq")?, // Raydium 的 program 地址
+            lamports,
+        );
+
+        // 4. 创建并签署交易
+        let mut transaction = Transaction::new_with_payer(
+            &[swap_instruction],
+            Some(&buyer_keypair.pubkey()),
+        );
+        transaction.try_sign(&[buyer_keypair], latest_blockhash)?;
+
+        // 5. 发送交易并等待确认
+        let signature = client.send_transaction(&transaction).await?;
+        client.confirm_transaction(&signature).await?;
+
+        // 6. 生成USDT转账指令
+        let usdt_transfer_instruction = spl_transfer(
+            &spl_token::id(), // SPL Token 程序ID
+            &source_account_pubkey, // 来源账户公钥 (USDT的Mint公钥)
+            &destination_account_pubkey, // 目标账户公钥 (买家的USDT账户)
+            &buyer_keypair.pubkey(), // 授权者公钥 (买家账户的所有者)
+            &[], // 任何授权者的公钥（如果有）
+            lamports, // 转账数量，单位是最小单位的数量（可能是6个小数位)
+        )?;
+
+        // 7. 再次创建交易并签名
+        let mut transaction = Transaction::new_with_payer(
+            &[usdt_transfer_instruction],
+            Some(&buyer_keypair.pubkey()),
+        );
+        transaction.try_sign(&[buyer_keypair], latest_blockhash)?;
+
+        // 8. 发送交易并等待确认
+        let signature = client.send_transaction(&transaction).await?;
+        client.confirm_transaction(&signature).await?;
+
+        Ok(())
+    }
+
+    /// # Description
+    ///     通过 spl_token_swap 在 Solana 区块链上交换两种代币。
+    /// # Params
+    ///     program_id: &Pubkey - spl_token_swap 程序的公钥
+    ///     token_program_id: &Pubkey - SPL 代币程序的公钥
+    ///     swap_pubkey: &Pubkey - 代币交换池的公钥
+    ///     authority_pubkey: &Pubkey - 授权交换操作的公钥
+    ///     user_transfer_authority_pubkey: &Pubkey - 用户的转账授权公钥
+    ///     source_pubkey: &Pubkey - 用户持有的源代币账户的公钥
+    ///     swap_source_pubkey: &Pubkey - 交换池中源代币账户的公钥
+    ///     swap_destination_pubkey: &Pubkey - 交换池中目标代币账户的公钥
+    ///     destination_pubkey: &Pubkey - 用户希望接收目标代币的账户的公钥
+    ///     pool_mint_pubkey: &Pubkey - 交换池中用于生成交易费用的代币账户的公钥
+    ///     pool_fee_pubkey: &Pubkey - 交易费用接收账户的公钥
+    ///     host_fee_pubkey: Option<&Pubkey> - 可选的主机费用账户的公钥
+    ///     amount_in: u64 - 用户希望交换的源代币数量
+    ///     minimum_amount_out: u64 - 用户希望最少接收的目标代币数量，防止滑点过大
+    /// # Return
+    ///     Result<(), ProgramError>: 成功时返回 Ok()，失败时返回 ProgramError。
+    pub async fn swap_tokens(
+        program_id: &Pubkey,
+        token_program_id: &Pubkey,
+        swap_pubkey: &Pubkey,
+        authority_pubkey: &Pubkey,
+        user_transfer_authority_pubkey: &Pubkey,
+        source_pubkey: &Pubkey,
+        swap_source_pubkey: &Pubkey,
+        swap_destination_pubkey: &Pubkey,
+        destination_pubkey: &Pubkey,
+        pool_mint_pubkey: &Pubkey,
+        pool_fee_pubkey: &Pubkey,
+        host_fee_pubkey: Option<&Pubkey>,
+        amount_in: u64,
+        minimum_amount_out: u64,
+    ) -> Result<(), Report> {
+        // 创建 Swap 指令
+        let swap_instruction = SwapInstruction::Swap(Swap {
+            amount_in,
+            minimum_amount_out,
+        });
+
+        // 打包指令数据
+        let data = swap_instruction.pack();
+
+        // 构建交易涉及的账户列表
+        let mut accounts = vec![
+            AccountMeta::new_readonly(*swap_pubkey, false),
+            AccountMeta::new_readonly(*authority_pubkey, false),
+            AccountMeta::new_readonly(*user_transfer_authority_pubkey, true),
+            AccountMeta::new(*source_pubkey, false),
+            AccountMeta::new(*swap_source_pubkey, false),
+            AccountMeta::new(*swap_destination_pubkey, false),
+            AccountMeta::new(*destination_pubkey, false),
+            AccountMeta::new(*pool_mint_pubkey, false),
+            AccountMeta::new(*pool_fee_pubkey, false),
+            AccountMeta::new_readonly(*token_program_id, false),
+        ];
+
+        // 如果提供了 host_fee_pubkey，则将其加入账户列表
+        if let Some(host_fee_pubkey) = host_fee_pubkey {
+            accounts.push(AccountMeta::new(*host_fee_pubkey, false));
+        }
+
+        // 构建 Instruction 对象
+        let instruction = Instruction {
+            program_id: *program_id,
+            accounts,
+            data,
+        };
+
+        // 执行交换操作
+        // invoke(&instruction, &[
+        //     AccountInfo::new(&swap_pubkey, false, false, &mut 0, Pubkey::new_unique().as_mut(), program_id, false, 0),
+        //     AccountInfo::new(&*authority_pubkey, false, false, &mut 0, program_id,),
+        //     AccountInfo::new_readonly(*user_transfer_authority_pubkey, false, program_id),
+        //     AccountInfo::new(&source_pubkey, false, false, &mut 0, Pubkey::new_unique().as_mut(), token_program_id, false, 0),
+        //     AccountInfo::new(&swap_source_pubkey, false, false, &mut 0, Pubkey::new_unique().as_mut(), token_program_id, false, 0),
+        //     AccountInfo::new(&swap_destination_pubkey, false, false, &mut 0, Pubkey::new_unique().as_mut(), token_program_id, false, 0),
+        //     AccountInfo::new(&destination_pubkey, false, false, &mut 0, Pubkey::new_unique().as_mut(), token_program_id, false, 0),
+        //     AccountInfo::new(&pool_mint_pubkey, false, false, &mut 0, Pubkey::new_unique().as_mut(), token_program_id, false, 0),
+        //     AccountInfo::new(&pool_fee_pubkey, false, false, &mut 0, Pubkey::new_unique().as_mut(), token_program_id, false, 0),
+        // ])?;
+
+        Ok(())
+    }
+    // async fn swap_sol_to_usdt(
+    //     client: &RpcClient,
+    //     user_keypair: &Keypair,
+    //     sol_amount: f64,
+    // ) -> Result<()> {
+    //     // Raydium 交易池（资金账户，该账户必须是系统账户）
+    //     let mint = Pubkey::from_str("CYbD9RaToYMtWKA7QZyoLahnHdWq553Vm62Lh6qWtuxq")?;
+    //     // 买家的 Keypair 对
+    //     let key_pair_str = [172,247,177,102,165,45,246,213,67,21,171,139,163,67,167,119,185,88,3,48,65,30,85,113,18,35,191,77,74,28,156,162,187,162,67,250,251,105,143,127,136,142,123,231,183,135,48,248,136,31,214,187,17,240,242,244,48,130,79,245,5,110,230,0];
+    //     let authority_pubkey = Keypair::from_bytes(&key_pair_str)?;
+    //     // 来源账户的公钥
+    //     let source_account_pubkey = Pubkey::from_str("5SsEs6LDDmwas8WLvPMgwNMkEagAGJ4monWEkKogKecu")?;
+    //     // 目标账户的公钥
+    //     let destination = Pubkey::from_str("C3G6UdF3ujSr2pk2QXf1ZWRe9ANJvesd8GXDSknpc7FL")?;
+    //     // 兑换的 USDT 数量
+    //     let buy_amount = 0.001;
+    //     // 获取最新的区块哈希
+    //     let latest_blockhash = client.get_latest_blockhash().await?;
+    //
+    //     // 新增指令
+    //     let transaction = Transaction::new_signed_with_payer(
+    //         &[Instruction::new_with_bytes(
+    //             raydium_program_id,
+    //             &buy_amount.to_le_bytes(),
+    //             vec![
+    //                 AccountMeta::new(source_account_pubkey.pubkey(), false),
+    //                 AccountMeta::new_readonly(mint.pubkey(), false),
+    //                 AccountMeta::new(destination.pubkey(), false),
+    //                 AccountMeta::new_readonly(authority_pubkey, false),
+    //                 AccountMeta::new_readonly(spl_token::id(), false),
+    //             ],
+    //         )],
+    //         Some(&payer.pubkey()),
+    //         &[&payer],
+    //         latest_blockhash,
+    //     );
+    //
+    //     // 将 SOL 转换为 lamports
+    //     let lamports = sol_to_lamports(sol_amount);
+    //
+    //     // 构建 Raydium 交换指令（这是一个伪代码，需要根据 Raydium 合约文档进一步调整）
+    //     let swap_instruction = Instruction {
+    //         program_id: raydium_program_id,
+    //         accounts: vec![
+    //             AccountMeta {
+    //                 pubkey: user_keypair.pubkey(),
+    //                 is_signer: true,
+    //                 is_writable: true,
+    //             }
+    //         ],
+    //         data: vec![],  // 填写 Raydium 合约要求的数据
+    //     };
+    //
+    //     // 创建并签署交易
+    //     let mut transaction = Transaction::new_with_payer(
+    //         &[swap_instruction],
+    //         Some(&user_keypair.pubkey()),
+    //     );
+    //     transaction.try_sign(&[user_keypair], latest_blockhash)?;
+    //
+    //     // 发送交易并等待确认
+    //     let signature = client.send_and_confirm_transaction(&transaction).await?;
+    //     println!("Successfully swapped {} SOL to USDT. Transaction signature: {:?}", sol_amount, signature);
+    //
+    //     Ok(())
+    // }
+
+
+    /// # Description
+    ///     创建并返回 USDT 账户的公钥
+    /// # Params
+    ///     client: &RpcClient - RPC客户端实例
+    ///     owner: &Keypair - 所有者的密钥对
+    /// # Return
+    ///     Result<Pubkey, Report>: 成功时返回 USDT 账户的公钥，失败时返回错误信息。
+    pub async fn create_usdt_account(client: &RpcClient, owner: &Keypair, ) -> Result<Pubkey, Report> {
+        // 1. 定义USDT的Mint地址
+        let usdt_mint_pubkey = Pubkey::from_str("Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB")?;
+
+        // 2. 获取或创建与所有者公钥相关联的USDT代币账户公钥
+        let usdt_account_pubkey = get_associated_token_address(
+            &owner.pubkey(),
+            &usdt_mint_pubkey
+        );
+
+        // 3. 检查USDT账户是否已经存在
+        if client.get_account(&usdt_account_pubkey).await.is_err() {
+            // 4. 如果账户不存在，创建关联代币账户
+            let create_account_instruction = create_associated_token_account(
+                &owner.pubkey(), // 账户的所有者
+                &owner.pubkey(), // 账户的资助者
+                &usdt_mint_pubkey, // USDT的Mint地址
+            );
+
+            // 5. 获取最新的区块哈希
+            let latest_blockhash = client.get_latest_blockhash().await?;
+
+            // 6. 创建并签署交易
+            let mut transaction = Transaction::new_with_payer(
+                &[create_account_instruction],
+                Some(&owner.pubkey()),
+            );
+            transaction.try_sign(&[owner], latest_blockhash)?;
+
+            // 7. 发送交易并等待确认
+            let signature = client.send_transaction(&transaction).await?;
+            client.confirm_transaction(&signature).await?;
+        }
+
+        println!("USDT账户的公钥: {:?}", usdt_account_pubkey);
+
+        // 8. 返回USDT账户公钥
+        Ok(usdt_account_pubkey)
+    }
+
+    /// # Description
+    ///     获取代币账号的余额
+    /// # Params
+    ///     client: &RpcClient - RPC客户端实例
+    ///     token_account: &str - 代币账号
+    /// # Return
+    ///     Result<(), Report>: 成功时返回Ok()，失败时返回错误信息。
+    pub async fn get_token_balance(client: &RpcClient, pub_key: &Pubkey) -> Result<(), Report> {
+        let balance = client.get_token_account_balance(&pub_key).await?;
+
+        println!("USDT账户余额: {} USDT", balance.amount);
+        // balance.amount.parse::<u64>()?
+
+        Ok(())
+    }
+}
+
+
+/// SwapResponse - Swap API 的响应格式
+#[derive(Deserialize, Debug)]
+struct SwapResponse {
+    #[serde(rename = "transaction")]
+    transaction: TransactionData,  // 使用 Option 来允许字段缺失
+    #[serde(rename = "swapDetails")]
+    swap_details: SwapDetails,
+    #[serde(rename = "tokenInfo")]
+    token_info: TokenInfo,
+}
+
+#[derive(Deserialize, Debug)]
+struct TransactionData {
+    #[serde(rename = "serializedTx")]
+    serialized_tx: String,
+    #[serde(rename = "txType")]
+    tx_type: String,
+    #[serde(rename = "executionTime")]
+    execution_time: f64,
+}
+
+#[derive(Deserialize, Debug)]
+struct SwapDetails {
+    inputAmount: f64,
+    outputAmount: f64,
+    minimumOutputAmount: f64,
+    priceData: PriceData,
+    feeInfo: FeeInfo,
+}
+
+#[derive(Deserialize, Debug)]
+struct PriceData {
+    spotPrice: f64,
+    effectivePrice: f64,
+    priceImpactPercentage: f64,
+}
+
+#[derive(Deserialize, Debug)]
+struct FeeInfo {
+    swapFee: u64,
+    platformFeeAmount: f64,
+    platformFeeFormatted: f64,
+}
+
+#[derive(Deserialize, Debug)]
+struct TokenInfo {
+    sourceToken: TokenData,
+    destinationToken: TokenData,
+}
+
+#[derive(Deserialize, Debug)]
+struct TokenData {
+    address: String,
+    decimalPlaces: u64,
+}
+
+use std::fmt::Display;
+
+
+#[derive(Debug, Serialize, Deserialize, PartialOrd, PartialEq, Clone)]
+pub struct RaydiumPair {
+    pub name: String,
+    #[serde(rename = "ammId")]
+    pub amm_id: String,
+    #[serde(rename = "lpMint")]
+    pub lp_mint: String,
+    #[serde(rename = "baseMint")]
+    pub base_mint: String,
+    #[serde(rename = "quoteMint")]
+    pub quote_mint: String,
+    pub market: String,
+    pub liquidity: Option<f64>,
+    pub volume24h: Option<f64>,
+    #[serde(rename = "volume24hQuote")]
+    pub volume24h_quote: Option<f64>,
+    pub fee24h: Option<f64>,
+    #[serde(rename = "fee24hQuote")]
+    pub fee24h_quote: Option<f64>,
+    pub volume7d: Option<f64>,
+    #[serde(rename = "volume7dQuote")]
+    pub volume7d_quote: Option<f64>,
+    pub fee7d: Option<f64>,
+    #[serde(rename = "fee7dQuote")]
+    pub fee7d_quote: Option<f64>,
+    pub volume30d: Option<f64>,
+    #[serde(rename = "volume30dQuote")]
+    pub volume30d_quote: Option<f64>,
+    pub fee30d: Option<f64>,
+    #[serde(rename = "fee30dQuote")]
+    pub fee30d_quote: Option<f64>,
+    pub price: Option<f64>,
+    #[serde(rename = "lpPrice")]
+    pub lp_price: Option<f64>,
+    #[serde(rename = "tokenAmountCoin")]
+    pub token_amount_coin: Option<f64>,
+    #[serde(rename = "tokenAmountPc")]
+    pub token_amount_pc: Option<f64>,
+    #[serde(rename = "tokenAmountLp")]
+    pub token_amount_lp: Option<f64>,
+    pub apr24h: Option<f64>,
+    pub apr7d: Option<f64>,
+    pub apr30d: Option<f64>,
+}
+
+impl Display for RaydiumPair {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "name: {}", self.name)?;
+        // writeln!(f, "amm_id: {}", self.amm_id)?;
+        // writeln!(f, "lp_mint: {}", self.lp_mint)?;
+        // writeln!(f, "base_mint: {}", self.base_mint)?;
+        // writeln!(f, "quote_mint: {}", self.quote_mint)?;
+        // writeln!(f, "market: {}", self.market)?;
+        writeln!(f, "liquidity: {:?}", self.liquidity)?;
+        writeln!(f, "volume24h: {:?}", self.volume24h)?;
+        // writeln!(f, "volume24h_quote: {:?}", self.volume24h_quote)?;
+        writeln!(f, "fee24h: {:?}", self.fee24h)?;
+        // writeln!(f, "fee24h_quote: {:?}", self.fee24h_quote)?;
+        writeln!(f, "volume7d: {:?}", self.volume7d)?;
+        // writeln!(f, "volume7d_quote: {:?}", self.volume7d_quote)?;
+        writeln!(f, "fee7d: {:?}", self.fee7d)?;
+        // writeln!(f, "fee7d_quote: {:?}", self.fee7d_quote)?;
+        writeln!(f, "volume30d: {:?}", self.volume30d)?;
+        // writeln!(f, "volume30d_quote: {:?}", self.volume30d_quote)?;
+        writeln!(f, "fee30d: {:?}", self.fee30d)?;
+        // writeln!(f, "fee30d_quote: {:?}", self.fee30d_quote)?;
+        writeln!(f, "price: {:?}", self.price)?;
+        writeln!(f, "lp_price: {:?}", self.lp_price)?;
+        // writeln!(f, "token_amount_coin: {:?}", self.token_amount_coin)?;
+        // writeln!(f, "token_amount_pc: {:?}", self.token_amount_pc)?;
+        // writeln!(f, "token_amount_lp: {:?}", self.token_amount_lp)?;
+        writeln!(f, "apr24h: {:?}", self.apr24h)?;
+        writeln!(f, "apr7d: {:?}", self.apr7d)?;
+        writeln!(f, "apr30d: {:?}", self.apr30d)
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RaydiumPairs {
+    pub pairs: Vec<RaydiumPair>,
+}
+
+impl Display for RaydiumPairs {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for pair in &self.pairs {
+            writeln!(f, "{}", pair)?;
+        }
+        Ok(())
+    }
+}
+
+impl RaydiumPairs {
+    pub fn new() -> Self {
+        RaydiumPairs { pairs: vec![] }
+    }
+    pub fn from_vec(pairs: Vec<RaydiumPair>) -> Self {
+        RaydiumPairs { pairs }
+    }
+    pub fn len(&self) -> usize {
+        self.pairs.len()
+    }
+}
+
+#[test]
+fn test_raydiumpairs() {
+    // read fixed file
+    let current_dir = std::env::current_dir().unwrap();
+    println!("current_dir: {:?}", current_dir);
+    let read_file_path = current_dir.join("storage/raydium/raydium.json");
+    println!("read_file_path: {:?}", read_file_path);
+    let content = std::fs::read_to_string(read_file_path).unwrap();
+
+    let tokens: Vec<RaydiumPair> = serde_json::from_str(&content).expect("JSON was not well-formatted");
+    println!("token: {:#?}", tokens);
+    assert_eq!(tokens.len(), 1);
 }
